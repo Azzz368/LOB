@@ -62,7 +62,7 @@ directionalLight.position.set(5, 10, 5);
 scene.add(directionalLight);
 
 // 源文本库（用于点击后在左侧展示对应诗句）
-const poemSource = `I have gone marking the atlas of your bodywith crosses of fire.
+let poemSource = `I have gone marking the atlas of your bodywith crosses of fire.
 
 My mouth went across:a spider trying to hide.In you, behind you, timid, driven by thirst.
 
@@ -76,8 +76,7 @@ Penned up between the sea and sadness.Soundless, delirious, between two motionle
 
 Between the lips and the voice something goes dying.
 
-Something with the wings of a bird, something of anguish and oblivion.
-The way nets cannot hold water.
+Something with the wings of a bird, something of anguish and oblivion.The way nets cannot hold water.
 
 My toy doll, only a few drops are left trembling.
 
@@ -137,7 +136,7 @@ Leaning into the afternoons I fling my sad nets to the sea that beats on your ma
 The birds peck at the first stars that flash like my soul when I love you.
 
 The night on its shadowy mare shedding blue tassels over the land.`;
-const poemLines = poemSource.split('\n').filter(l => l.trim().length > 0);
+let poemLines = poemSource.split('\n').filter(l => l.trim().length > 0);
 
 // 中文翻译映射
 const translationMap = {
@@ -434,7 +433,7 @@ function createTextCanvas(text) {
 
 
 const textCanvas = createTextCanvas(poemText);
-const texture = new THREE.CanvasTexture(textCanvas);
+let texture = new THREE.CanvasTexture(textCanvas);
 texture.wrapS = THREE.RepeatWrapping;
 texture.wrapT = THREE.RepeatWrapping;
 texture.anisotropy = renderer.capabilities.getMaxAnisotropy();
@@ -482,7 +481,7 @@ const overlayCanvas = document.createElement('canvas');
 overlayCanvas.width = baseCanvasWidth / 2;
 overlayCanvas.height = baseCanvasHeight / 2;
 const overlayCtx = overlayCanvas.getContext('2d');
-const overlayTexture = new THREE.CanvasTexture(overlayCanvas);
+let overlayTexture = new THREE.CanvasTexture(overlayCanvas);
 overlayTexture.wrapS = THREE.RepeatWrapping;
 overlayTexture.wrapT = THREE.RepeatWrapping;
 overlayTexture.anisotropy = renderer.capabilities.getMaxAnisotropy();
@@ -790,11 +789,10 @@ function appendPoemsToSource(remoteData) {
   });
   if (addedLines.length) {
     const tail = addedLines.join('\n');
-    // 将新行追加到poemSource与poemText
-    const sep = poemSource.endsWith('\n') ? '' : '\n';
-    const sep2 = poemText.endsWith('\n') ? '' : '\n';
-    poemSource += `${sep}${tail}`;
-    updatePoemText(`${sep2}${tail}`);
+    // 更新句子库以便点击匹配
+    addedLines.forEach(line => { poemLines.push(line); });
+    const prefix = (currentPoemText && !currentPoemText.endsWith('\n')) ? '\n' : '';
+    updatePoemText(`${prefix}${tail}`);
   }
 }
 
@@ -812,10 +810,6 @@ function updatePoemText(extraText) {
 let currentPoemText = null;
 
 function rebuildTextTextureAndMapping() {
-  // 释放旧纹理资源
-  if (texture) texture.dispose();
-  if (overlayTexture) overlayTexture.dispose();
-
   // 重绘主文本画布并重建wordBoxes
   const textCanvas = createTextCanvas(currentPoemText || poemText);
   const newTexture = new THREE.CanvasTexture(textCanvas);
@@ -838,7 +832,7 @@ function rebuildTextTextureAndMapping() {
   overlayTexture.needsUpdate = true;
 
   // 替换引用
-  texture.dispose();
+  if (texture) texture.dispose();
   texture = newTexture;
 }
 

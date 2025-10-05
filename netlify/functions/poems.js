@@ -28,8 +28,8 @@ export default async (req, context) => {
     updatedAt: new Date().toISOString()
   };
 
-  // 可选：把数据放到仓库 poems.json，函数实时拉取
-  const GITHUB_RAW = "https://raw.githubusercontent.com/Azzz368/threejspj1/main/poems.json";
+  // 可配置：通过环境变量 POEMS_JSON_URL 指定 JSON 源（否则用默认示例仓库）
+  const GITHUB_RAW = (process.env.POEMS_JSON_URL || "https://raw.githubusercontent.com/Azzz368/threejspj1/main/poems.json");
   try {
     const r = await fetch(GITHUB_RAW, { cache: "no-store" });
     if (r.ok) {
