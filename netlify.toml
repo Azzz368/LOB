@@ -1,0 +1,12 @@
+[build]
+  command = "npm run build || echo skip"
+  publish = "."
+
+[functions]
+  directory = "netlify/functions"
+
+# 单页应用可选：前端路由回退（如果需要）
+#[[redirects]]
+#  from = "/*"
+#  to = "/index.html"
+#  status = 200
