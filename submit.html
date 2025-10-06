@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>投稿诗歌 - Library of Babel</title>
+  <title>Submit — Library of Babel</title>
   <style>
     * {
       margin: 0;
@@ -12,51 +12,58 @@
     }
     
     body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", sans-serif;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      font-family: "Sitka", "SimSun", "宋体", serif;
+      background: #ffffff;
       min-height: 100vh;
-      padding: 20px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-    
-    .container {
-      max-width: 700px;
-      width: 100%;
-      background: white;
-      border-radius: 16px;
-      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-      overflow: hidden;
-    }
-    
-    .header {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      color: white;
-      padding: 40px 30px;
-      text-align: center;
-    }
-    
-    .header h1 {
-      font-size: 32px;
-      margin-bottom: 12px;
-    }
-    
-    .header p {
-      opacity: 0.95;
-      font-size: 15px;
+      padding: 0;
+      color: #000000;
       line-height: 1.6;
     }
     
-    .form-container {
-      padding: 40px;
+    .container {
+      max-width: 680px;
+      margin: 0 auto;
+      padding: 80px 40px 120px;
     }
     
+    /* Header */
+    .header {
+      margin-bottom: 80px;
+      text-align: left;
+    }
+    
+    .header h1 {
+      font-family: "Sitka", serif;
+      font-size: 48px;
+      font-weight: 400;
+      letter-spacing: -0.02em;
+      margin-bottom: 16px;
+      color: #000000;
+    }
+    
+    .header .subtitle {
+      font-family: "Sitka", serif;
+      font-size: 16px;
+      font-weight: 300;
+      letter-spacing: 0.01em;
+      color: #666666;
+      line-height: 1.8;
+    }
+    
+    .divider {
+      width: 100%;
+      height: 1px;
+      background: #000000;
+      margin: 60px 0;
+    }
+    
+    /* Message */
     .message {
-      padding: 16px;
-      border-radius: 8px;
-      margin-bottom: 24px;
+      padding: 20px 0;
+      margin-bottom: 40px;
       font-size: 14px;
+      border-left: 2px solid;
+      padding-left: 20px;
       display: none;
     }
     
@@ -65,31 +72,33 @@
     }
     
     .message.success {
-      background: #d4edda;
-      color: #155724;
-      border: 1px solid #c3e6cb;
+      border-color: #000000;
+      color: #000000;
     }
     
     .message.error {
-      background: #f8d7da;
-      color: #721c24;
-      border: 1px solid #f5c6cb;
+      border-color: #000000;
+      color: #000000;
     }
     
+    /* Form */
     .form-group {
-      margin-bottom: 24px;
+      margin-bottom: 48px;
     }
     
     label {
       display: block;
-      margin-bottom: 8px;
+      margin-bottom: 12px;
+      font-family: "Sitka", serif;
+      font-size: 13px;
       font-weight: 600;
-      color: #333;
-      font-size: 15px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #000000;
     }
     
     label .required {
-      color: #dc3545;
+      color: #000000;
       margin-left: 4px;
     }
     
@@ -97,105 +106,167 @@
     input[type="email"],
     textarea {
       width: 100%;
-      padding: 12px 16px;
-      border: 2px solid #e0e0e0;
-      border-radius: 8px;
-      font-size: 14px;
-      font-family: inherit;
-      transition: border-color 0.3s;
+      padding: 14px 0;
+      border: none;
+      border-bottom: 1px solid #cccccc;
+      font-family: "Sitka", "SimSun", "宋体", serif;
+      font-size: 16px;
+      background: transparent;
+      color: #000000;
+      transition: border-color 0.3s ease;
     }
     
     input:focus,
     textarea:focus {
       outline: none;
-      border-color: #667eea;
+      border-bottom-color: #000000;
+    }
+    
+    input::placeholder,
+    textarea::placeholder {
+      color: #cccccc;
+      font-style: italic;
     }
     
     textarea {
-      min-height: 150px;
+      min-height: 160px;
       resize: vertical;
-      font-family: "Sitka", "SimSun", "宋体", serif;
-      line-height: 1.6;
+      line-height: 1.8;
+      padding: 14px 0;
     }
     
     .hint {
-      font-size: 13px;
-      color: #6c757d;
-      margin-top: 6px;
-      line-height: 1.5;
+      font-family: "Sitka", serif;
+      font-size: 12px;
+      color: #999999;
+      margin-top: 8px;
+      line-height: 1.6;
+      font-style: italic;
     }
     
+    /* Language Selector */
+    .language-selector {
+      display: flex;
+      gap: 0;
+      margin-bottom: 20px;
+      border: 1px solid #000000;
+    }
+    
+    .language-selector button {
+      flex: 1;
+      padding: 12px 20px;
+      font-family: "Sitka", serif;
+      font-size: 13px;
+      font-weight: 400;
+      letter-spacing: 0.05em;
+      background: #ffffff;
+      color: #000000;
+      border: none;
+      border-right: 1px solid #000000;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    
+    .language-selector button:last-child {
+      border-right: none;
+    }
+    
+    .language-selector button:hover {
+      background: #f5f5f5;
+    }
+    
+    .language-selector button.active {
+      background: #000000;
+      color: #ffffff;
+    }
+    
+    /* Translation Section */
     .translation-section {
-      background: #f8f9fa;
-      padding: 20px;
-      border-radius: 8px;
-      margin-bottom: 24px;
+      background: #fafafa;
+      padding: 32px;
+      margin-bottom: 48px;
+      border: 1px solid #eeeeee;
     }
     
     .translation-section h3 {
-      color: #667eea;
-      font-size: 16px;
-      margin-bottom: 16px;
+      font-family: "Sitka", serif;
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-bottom: 24px;
+      color: #000000;
     }
     
     .translation-pair {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 12px;
-      margin-bottom: 12px;
+      gap: 20px;
+      margin-bottom: 16px;
     }
     
     .translation-pair input {
-      font-size: 13px;
+      font-size: 14px;
+      padding: 12px 0;
     }
     
-    button {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      color: white;
-      border: none;
-      padding: 14px 36px;
-      border-radius: 8px;
-      font-size: 16px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: transform 0.2s, box-shadow 0.2s;
+    /* Buttons */
+    button[type="submit"] {
       width: 100%;
+      padding: 18px 40px;
+      font-family: "Sitka", serif;
+      font-size: 14px;
+      font-weight: 400;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      background: #000000;
+      color: #ffffff;
+      border: none;
+      cursor: pointer;
+      transition: all 0.3s ease;
     }
     
-    button:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 8px 24px rgba(102, 126, 234, 0.4);
+    button[type="submit"]:hover {
+      background: #333333;
     }
     
-    button:active {
-      transform: translateY(0);
+    button[type="submit"]:active {
+      background: #000000;
     }
     
-    button:disabled {
-      opacity: 0.6;
+    button[type="submit"]:disabled {
+      background: #cccccc;
       cursor: not-allowed;
-      transform: none;
     }
     
     .add-translation-btn {
-      background: #28a745;
-      margin-top: 12px;
-      width: auto;
       padding: 10px 24px;
-      font-size: 14px;
+      font-family: "Sitka", serif;
+      font-size: 12px;
+      font-weight: 400;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      background: #ffffff;
+      color: #000000;
+      border: 1px solid #000000;
+      cursor: pointer;
+      margin-top: 16px;
+      transition: all 0.2s ease;
     }
     
     .add-translation-btn:hover {
-      box-shadow: 0 6px 20px rgba(40, 167, 69, 0.4);
+      background: #000000;
+      color: #ffffff;
     }
     
+    /* Loading */
     .loading {
       display: inline-block;
-      width: 16px;
-      height: 16px;
+      width: 12px;
+      height: 12px;
       border: 2px solid rgba(255,255,255,0.3);
       border-radius: 50%;
-      border-top-color: white;
+      border-top-color: #ffffff;
       animation: spin 0.8s linear infinite;
       margin-left: 8px;
       vertical-align: middle;
@@ -205,124 +276,138 @@
       to { transform: rotate(360deg); }
     }
     
-    .footer-links {
-      text-align: center;
-      padding: 20px;
-      border-top: 1px solid #e9ecef;
-      font-size: 14px;
+    
+    /* Number indicator */
+    .form-number {
+      font-family: "Sitka", serif;
+      font-size: 11px;
+      color: #cccccc;
+      margin-right: 8px;
+      letter-spacing: 0.1em;
     }
     
-    .footer-links a {
-      color: #667eea;
-      text-decoration: none;
-      margin: 0 12px;
-    }
-    
-    .footer-links a:hover {
-      text-decoration: underline;
-    }
-    
-    .language-selector {
-      display: flex;
-      gap: 8px;
-      margin-bottom: 16px;
-    }
-    
-    .language-selector button {
-      flex: 1;
-      padding: 10px;
-      font-size: 14px;
-      background: #e9ecef;
-      color: #495057;
-    }
-    
-    .language-selector button.active {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      color: white;
+    /* Responsive */
+    @media (max-width: 768px) {
+      .container {
+        padding: 60px 24px 80px;
+      }
+      
+      .header h1 {
+        font-size: 36px;
+      }
+      
+      .translation-pair {
+        grid-template-columns: 1fr;
+        gap: 12px;
+      }
+      
+      .footer-links a {
+        display: block;
+        margin: 12px 0;
+      }
     }
   </style>
 </head>
 <body>
   <div class="container">
+    <!-- Header -->
     <div class="header">
-      <h1>📝 投稿诗歌</h1>
-      <p>分享你的诗歌作品或喜爱的诗句<br>审核通过后将展示在转筒上</p>
+      <h1>SUBMIT YOUR POEM</h1>
+      <p class="subtitle">
+        Share your favourite poems with us. After review,<br>
+        it will be displayed on the Library of Bable.<br>
+        分享你最爱的诗句，24小时后会显示在“图书馆”中.
+      </p>
     </div>
     
-    <div class="form-container">
-      <div class="message" id="message"></div>
+    <div class="divider"></div>
+    
+    <!-- Message -->
+    <div class="message" id="message"></div>
+    
+    <!-- Form -->
+    <form id="submitForm">
+      <div class="form-group">
+        <label>
+          <span class="form-number">01</span>
+          Language-语言
+          <span class="required">*</span>
+        </label>
+        <div class="language-selector">
+          <button type="button" class="lang-btn active" data-lang="en" onclick="selectLanguage('en')">English</button>
+          <button type="button" class="lang-btn" data-lang="zh" onclick="selectLanguage('zh')">中文</button>
+          <button type="button" class="lang-btn" data-lang="both" onclick="selectLanguage('both')">Bilingual</button>
+        </div>
+        <input type="hidden" id="language" name="language" value="en">
+      </div>
       
-      <form id="submitForm">
-        <div class="form-group">
-          <label>
-            诗歌语言
-            <span class="required">*</span>
-          </label>
-          <div class="language-selector">
-            <button type="button" class="lang-btn active" data-lang="en" onclick="selectLanguage('en')">英文</button>
-            <button type="button" class="lang-btn" data-lang="zh" onclick="selectLanguage('zh')">中文</button>
-            <button type="button" class="lang-btn" data-lang="both" onclick="selectLanguage('both')">双语</button>
+      <div class="form-group">
+        <label for="author">
+          <span class="form-number">02</span>
+          Author-作者
+          <span class="required">*</span>
+        </label>
+        <input type="text" id="author" name="author" placeholder="e.g., Pablo Neruda" required>
+        <p class="hint">Please enter the original author's name</p>
+      </div>
+      
+      <div class="form-group">
+        <label for="lines">
+          <span class="form-number">03</span>
+          Poem Content-内容
+          <span class="required">*</span>
+        </label>
+        <textarea id="lines" name="lines" placeholder="One line per verse&#10;Multiple lines supported&#10;&#10;Example:&#10;Leaning into the afternoons I cast my sad nets&#10;towards your oceanic eyes." required></textarea>
+        <p class="hint">Each line will be displayed as an independent verse on the cylinder</p>
+      </div>
+      
+      <div class="translation-section" id="translationSection" style="display: none;">
+        <h3>
+          <span class="form-number">04</span>
+          Translation Pairs (Optional)-对照翻译（可选）
+        </h3>
+        <div id="translationsContainer">
+          <div class="translation-pair">
+            <input type="text" placeholder="Original text" class="trans-en">
+            <input type="text" placeholder="Chinese translation" class="trans-zh">
           </div>
-          <input type="hidden" id="language" name="language" value="en">
         </div>
-        
-        <div class="form-group">
-          <label for="author">
-            作者
-            <span class="required">*</span>
-          </label>
-          <input type="text" id="author" name="author" placeholder="例如：Pablo Neruda / 聂鲁达" required>
-          <p class="hint">请填写诗歌的原作者姓名</p>
-        </div>
-        
-        <div class="form-group">
-          <label for="lines">
-            诗句内容
-            <span class="required">*</span>
-          </label>
-          <textarea id="lines" name="lines" placeholder="请输入诗句，每行一句&#10;支持多行输入&#10;&#10;例如：&#10;Leaning into the afternoons I cast my sad nets&#10;towards your oceanic eyes." required></textarea>
-          <p class="hint">每行会被作为独立的诗句显示在转筒上，请确保格式正确</p>
-        </div>
-        
-        <div class="translation-section" id="translationSection" style="display: none;">
-          <h3>中文翻译对照（可选）</h3>
-          <div id="translationsContainer">
-            <div class="translation-pair">
-              <input type="text" placeholder="英文原句" class="trans-en">
-              <input type="text" placeholder="中文翻译" class="trans-zh">
-            </div>
-          </div>
-          <button type="button" class="add-translation-btn" onclick="addTranslationPair()">+ 添加更多翻译</button>
-          <p class="hint">如果是双语诗歌，请在左侧输入完整英文句子，右侧输入对应中文翻译</p>
-        </div>
-        
-        <div class="form-group">
-          <label for="submitterName">
-            你的名字（可选）
-          </label>
-          <input type="text" id="submitterName" name="submitterName" placeholder="留下你的名字（可不填）">
-        </div>
-        
-        <div class="form-group">
-          <label for="submitterEmail">
-            联系邮箱（可选）
-          </label>
-          <input type="email" id="submitterEmail" name="submitterEmail" placeholder="example@email.com">
-          <p class="hint">如需通知审核结果，请留下邮箱（不会公开显示）</p>
-        </div>
-        
-        <button type="submit" id="submitBtn">提交诗歌</button>
-      </form>
-    </div>
-    
-    <div class="footer-links">
-      <a href="/">返回主页</a>
-      <a href="/admin.html">管理员入口</a>
-    </div>
+        <button type="button" class="add-translation-btn" onclick="addTranslationPair()">+ Add More</button>
+        <p class="hint">For bilingual poems, enter the complete sentence on the left and its translation on the right</p>
+      </div>
+      
+      <div class="form-group">
+        <label for="submitterName">
+          <span class="form-number" id="nameNumber">04</span>
+          Your Name (Optional)-您的网名（可选）
+        </label>
+        <input type="text" id="submitterName" name="submitterName" placeholder="Leave your name">
+      </div>
+      
+      <div class="form-group">
+        <label for="submitterEmail">
+          <span class="form-number" id="emailNumber">05</span>
+          Contact Email (Optional)-邮箱（可选）
+        </label>
+        <input type="email" id="submitterEmail" name="submitterEmail" placeholder="your@email.com">
+        <p class="hint">Provide your email if you wish to be notified of the review result (not publicly displayed)</p>
+      </div>
+      
+      <button type="submit" id="submitBtn">Submit Poem</button>
+    </form>
   </div>
 
   <script>
     let currentLanguage = 'en';
+    
+    // 更新表单编号
+    function updateFormNumbers() {
+      const translationSection = document.getElementById('translationSection');
+      const isVisible = translationSection.style.display !== 'none';
+      
+      document.getElementById('nameNumber').textContent = isVisible ? '05' : '04';
+      document.getElementById('emailNumber').textContent = isVisible ? '06' : '05';
+    }
     
     // 语言选择
     function selectLanguage(lang) {
@@ -344,6 +429,8 @@
       } else {
         translationSection.style.display = 'none';
       }
+      
+      updateFormNumbers();
     }
     
     // 添加翻译对
@@ -352,8 +439,8 @@
       const pair = document.createElement('div');
       pair.className = 'translation-pair';
       pair.innerHTML = `
-        <input type="text" placeholder="英文原句" class="trans-en">
-        <input type="text" placeholder="中文翻译" class="trans-zh">
+        <input type="text" placeholder="Original text" class="trans-en">
+        <input type="text" placeholder="Chinese translation" class="trans-zh">
       `;
       container.appendChild(pair);
     }
@@ -364,7 +451,7 @@
       
       const submitBtn = document.getElementById('submitBtn');
       submitBtn.disabled = true;
-      submitBtn.innerHTML = '提交中<span class="loading"></span>';
+      submitBtn.innerHTML = 'Submitting<span class="loading"></span>';
       
       try {
         // 收集表单数据
@@ -376,7 +463,7 @@
         const submitterEmail = document.getElementById('submitterEmail').value.trim();
         
         if (!author || lines.length === 0) {
-          throw new Error('请填写作者和诗句内容');
+          throw new Error('Please fill in the author and poem content');
         }
         
         // 收集翻译对照
@@ -414,34 +501,37 @@
         
         if (!res.ok) {
           const error = await res.text();
-          throw new Error(error || '提交失败');
+          throw new Error(error || 'Submission failed');
         }
         
         const result = await res.json();
         
         // 显示成功消息
-        showMessage(`✅ 提交成功！你的诗歌已进入审核队列，感谢分享！`, 'success');
+        showMessage(`Submission successful. Your poem has been queued for review. Thank you for sharing.`, 'success');
         
         // 重置表单
         document.getElementById('submitForm').reset();
         selectLanguage('en');
         document.getElementById('translationsContainer').innerHTML = `
           <div class="translation-pair">
-            <input type="text" placeholder="英文原句" class="trans-en">
-            <input type="text" placeholder="中文翻译" class="trans-zh">
+            <input type="text" placeholder="Original text" class="trans-en">
+            <input type="text" placeholder="Chinese translation" class="trans-zh">
           </div>
         `;
         
-        // 5秒后清除消息
+        // 滚动到顶部
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        
+        // 10秒后清除消息
         setTimeout(() => {
           document.getElementById('message').classList.remove('visible');
-        }, 5000);
+        }, 10000);
         
       } catch (e) {
-        showMessage(`❌ ${e.message}`, 'error');
+        showMessage(`Error: ${e.message}`, 'error');
       } finally {
         submitBtn.disabled = false;
-        submitBtn.innerHTML = '提交诗歌';
+        submitBtn.innerHTML = 'Submit Poem';
       }
     });
     
@@ -451,7 +541,9 @@
       msg.textContent = text;
       msg.className = `message visible ${type}`;
     }
+    
+    // 初始化
+    updateFormNumbers();
   </script>
 </body>
 </html>
-

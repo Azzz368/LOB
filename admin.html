@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>管理后台 - Library of Babel</title>
+  <title>Admin — Library of Babel</title>
   <style>
     * {
       margin: 0;
@@ -12,56 +12,68 @@
     }
     
     body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", sans-serif;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      font-family: "Sitka", "SimSun", "宋体", serif;
+      background: #ffffff;
       min-height: 100vh;
-      padding: 20px;
+      padding: 0;
+      color: #000000;
+      line-height: 1.6;
     }
     
     .container {
       max-width: 1200px;
       margin: 0 auto;
-      background: white;
-      border-radius: 16px;
-      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-      overflow: hidden;
+      padding: 60px 40px 120px;
     }
     
+    /* Header */
     .header {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      color: white;
-      padding: 30px;
+      margin-bottom: 60px;
+      padding-bottom: 40px;
+      border-bottom: 1px solid #000000;
       display: flex;
       justify-content: space-between;
-      align-items: center;
+      align-items: flex-end;
     }
     
     .header h1 {
-      font-size: 28px;
+      font-family: "Sitka", serif;
+      font-size: 48px;
+      font-weight: 400;
+      letter-spacing: -0.02em;
+      color: #000000;
     }
     
-    .header .stats {
+    .stats {
       display: flex;
-      gap: 20px;
-      font-size: 14px;
+      gap: 40px;
     }
     
     .stat-item {
-      text-align: center;
+      text-align: right;
     }
     
     .stat-item .number {
-      font-size: 24px;
-      font-weight: bold;
+      font-family: "Sitka", serif;
+      font-size: 32px;
+      font-weight: 400;
+      color: #000000;
+      letter-spacing: -0.01em;
     }
     
     .stat-item .label {
-      opacity: 0.9;
-      font-size: 12px;
+      font-family: "Sitka", serif;
+      font-size: 11px;
+      color: #999999;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-top: 4px;
     }
     
+    /* Auth Section */
     .auth-section {
-      padding: 40px;
+      max-width: 480px;
+      margin: 120px auto;
       text-align: center;
     }
     
@@ -69,37 +81,100 @@
       display: none;
     }
     
+    .auth-section h2 {
+      font-family: "Sitka", serif;
+      font-size: 24px;
+      font-weight: 400;
+      letter-spacing: 0.02em;
+      margin-bottom: 40px;
+      color: #000000;
+    }
+    
+    .form-group {
+      margin-bottom: 32px;
+      text-align: left;
+    }
+    
+    label {
+      display: block;
+      margin-bottom: 12px;
+      font-family: "Sitka", serif;
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #000000;
+    }
+    
+    input[type="password"] {
+      width: 100%;
+      padding: 14px 0;
+      border: none;
+      border-bottom: 1px solid #cccccc;
+      font-family: "Sitka", serif;
+      font-size: 16px;
+      background: transparent;
+      color: #000000;
+      transition: border-color 0.3s ease;
+    }
+    
+    input:focus {
+      outline: none;
+      border-bottom-color: #000000;
+    }
+    
+    .hint {
+      font-family: "Sitka", serif;
+      font-size: 12px;
+      color: #999999;
+      margin-top: 8px;
+      font-style: italic;
+    }
+    
+    /* Admin Section */
     .admin-section {
       display: none;
-      padding: 30px;
     }
     
     .admin-section.visible {
       display: block;
     }
     
+    /* Tabs */
     .tabs {
       display: flex;
       gap: 0;
-      border-bottom: 2px solid #e9ecef;
-      margin-bottom: 30px;
+      border: 1px solid #000000;
+      margin-bottom: 60px;
     }
     
     .tab {
-      padding: 12px 24px;
-      background: transparent;
+      flex: 1;
+      padding: 16px 24px;
+      background: #ffffff;
       border: none;
-      font-size: 15px;
-      font-weight: 600;
-      color: #6c757d;
+      border-right: 1px solid #000000;
+      font-family: "Sitka", serif;
+      font-size: 13px;
+      font-weight: 400;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #666666;
       cursor: pointer;
-      border-bottom: 3px solid transparent;
-      transition: all 0.3s;
+      transition: all 0.2s ease;
+    }
+    
+    .tab:last-child {
+      border-right: none;
+    }
+    
+    .tab:hover {
+      background: #fafafa;
     }
     
     .tab.active {
-      color: #667eea;
-      border-bottom-color: #667eea;
+      background: #000000;
+      color: #ffffff;
     }
     
     .tab-content {
@@ -110,169 +185,208 @@
       display: block;
     }
     
+    /* Submission Card */
     .submission-card {
-      background: #f8f9fa;
-      border: 2px solid #e9ecef;
-      border-radius: 12px;
-      padding: 20px;
-      margin-bottom: 20px;
-      transition: box-shadow 0.3s;
+      background: #ffffff;
+      border: 1px solid #eeeeee;
+      border-left: 3px solid;
+      padding: 32px;
+      margin-bottom: 24px;
+      transition: all 0.2s ease;
     }
     
     .submission-card:hover {
-      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      border-color: #000000;
+      border-left-color: #000000;
     }
     
     .submission-card.pending {
-      border-left: 4px solid #ffc107;
+      border-left-color: #000000;
     }
     
     .submission-card.approved {
-      border-left: 4px solid #28a745;
-      opacity: 0.8;
+      border-left-color: #cccccc;
+      opacity: 0.7;
     }
     
     .submission-card.rejected {
-      border-left: 4px solid #dc3545;
-      opacity: 0.8;
+      border-left-color: #cccccc;
+      opacity: 0.5;
     }
     
     .card-header {
       display: flex;
       justify-content: space-between;
-      align-items: center;
-      margin-bottom: 16px;
+      align-items: baseline;
+      margin-bottom: 24px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid #f5f5f5;
     }
     
     .card-header h3 {
-      color: #333;
-      font-size: 18px;
+      font-family: "Sitka", serif;
+      font-size: 20px;
+      font-weight: 400;
+      color: #000000;
+      letter-spacing: -0.01em;
     }
     
     .status-badge {
-      padding: 4px 12px;
-      border-radius: 12px;
-      font-size: 12px;
+      font-family: "Sitka", serif;
+      font-size: 11px;
       font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      padding: 6px 12px;
+      border: 1px solid;
     }
     
     .status-badge.pending {
-      background: #fff3cd;
-      color: #856404;
+      background: #ffffff;
+      border-color: #000000;
+      color: #000000;
     }
     
     .status-badge.approved {
-      background: #d4edda;
-      color: #155724;
+      background: #ffffff;
+      border-color: #cccccc;
+      color: #999999;
     }
     
     .status-badge.rejected {
-      background: #f8d7da;
-      color: #721c24;
+      background: #ffffff;
+      border-color: #cccccc;
+      color: #999999;
     }
     
     .card-content {
-      margin-bottom: 16px;
+      margin-bottom: 24px;
+    }
+    
+    .card-content .meta-line {
+      font-family: "Sitka", serif;
+      font-size: 13px;
+      color: #666666;
+      margin-bottom: 8px;
+    }
+    
+    .card-content .meta-line strong {
+      font-weight: 600;
+      color: #000000;
     }
     
     .card-content .lines {
-      background: white;
-      padding: 12px;
-      border-radius: 6px;
-      margin: 8px 0;
+      background: #fafafa;
+      padding: 20px;
+      margin: 16px 0;
       font-family: "Sitka", "SimSun", "宋体", serif;
-      line-height: 1.6;
+      font-size: 15px;
+      line-height: 1.8;
       white-space: pre-wrap;
+      border-left: 2px solid #eeeeee;
+    }
+    
+    .card-content .translations {
+      margin-top: 16px;
+      font-size: 13px;
+      color: #666666;
+    }
+    
+    .card-content .translation-item {
+      margin: 8px 0;
+      padding-left: 16px;
+      border-left: 1px solid #eeeeee;
     }
     
     .card-meta {
-      font-size: 13px;
-      color: #6c757d;
-      margin-top: 8px;
+      font-family: "Sitka", serif;
+      font-size: 11px;
+      color: #999999;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      margin-top: 16px;
+      padding-top: 16px;
+      border-top: 1px solid #f5f5f5;
     }
     
     .card-actions {
       display: flex;
       gap: 12px;
       justify-content: flex-end;
+      margin-top: 24px;
+      padding-top: 20px;
+      border-top: 1px solid #f5f5f5;
     }
     
+    /* Buttons */
     .btn {
-      padding: 8px 20px;
-      border: none;
-      border-radius: 6px;
-      font-size: 14px;
-      font-weight: 600;
+      padding: 12px 28px;
+      border: 1px solid #000000;
+      font-family: "Sitka", serif;
+      font-size: 12px;
+      font-weight: 400;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
       cursor: pointer;
-      transition: all 0.3s;
+      transition: all 0.2s ease;
     }
     
     .btn:disabled {
-      opacity: 0.5;
+      opacity: 0.3;
       cursor: not-allowed;
     }
     
     .btn-approve {
-      background: #28a745;
-      color: white;
+      background: #000000;
+      color: #ffffff;
+      border-color: #000000;
     }
     
     .btn-approve:hover:not(:disabled) {
-      background: #218838;
+      background: #333333;
     }
     
     .btn-reject {
-      background: #dc3545;
-      color: white;
+      background: #ffffff;
+      color: #000000;
+      border-color: #000000;
     }
     
     .btn-reject:hover:not(:disabled) {
-      background: #c82333;
+      background: #f5f5f5;
     }
     
     .btn-primary {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      color: white;
-      padding: 12px 32px;
+      background: #000000;
+      color: #ffffff;
+      border-color: #000000;
+      padding: 16px 40px;
+      font-size: 14px;
     }
     
     .btn-primary:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+      background: #333333;
     }
     
-    .form-group {
-      margin-bottom: 24px;
-    }
-    
-    label {
-      display: block;
-      margin-bottom: 8px;
-      font-weight: 600;
-      color: #333;
+    .btn-secondary {
+      background: #ffffff;
+      color: #000000;
+      border-color: #000000;
+      padding: 16px 40px;
       font-size: 14px;
     }
     
-    input[type="password"] {
-      width: 100%;
-      max-width: 300px;
-      padding: 12px 16px;
-      border: 2px solid #e0e0e0;
-      border-radius: 8px;
-      font-size: 14px;
-      transition: border-color 0.3s;
+    .btn-secondary:hover {
+      background: #f5f5f5;
     }
     
-    input:focus {
-      outline: none;
-      border-color: #667eea;
-    }
-    
+    /* Message */
     .message {
-      padding: 16px;
-      border-radius: 8px;
-      margin-bottom: 24px;
+      padding: 20px;
+      margin-bottom: 40px;
+      font-family: "Sitka", serif;
       font-size: 14px;
+      border-left: 2px solid;
       display: none;
     }
     
@@ -281,91 +395,145 @@
     }
     
     .message.success {
-      background: #d4edda;
-      color: #155724;
-      border: 1px solid #c3e6cb;
+      border-color: #000000;
+      background: #fafafa;
+      color: #000000;
     }
     
     .message.error {
-      background: #f8d7da;
-      color: #721c24;
-      border: 1px solid #f5c6cb;
+      border-color: #000000;
+      background: #fafafa;
+      color: #000000;
     }
     
+    /* Empty State */
     .empty-state {
       text-align: center;
-      padding: 60px 20px;
-      color: #6c757d;
+      padding: 120px 40px;
+      color: #cccccc;
     }
     
-    .empty-state svg {
-      width: 100px;
-      height: 100px;
-      margin-bottom: 20px;
-      opacity: 0.3;
+    .empty-state .icon {
+      font-size: 64px;
+      margin-bottom: 24px;
+    }
+    
+    .empty-state p {
+      font-family: "Sitka", serif;
+      font-size: 14px;
+      letter-spacing: 0.05em;
     }
     
     .loading {
       text-align: center;
-      padding: 40px;
-      color: #6c757d;
+      padding: 80px 40px;
+      color: #999999;
+      font-family: "Sitka", serif;
+      font-size: 14px;
+      letter-spacing: 0.05em;
     }
     
-    .hint {
-      font-size: 12px;
-      color: #6c757d;
-      margin-top: 4px;
+    /* Actions Bar */
+    .actions-bar {
+      text-align: center;
+      margin-top: 60px;
+      padding-top: 40px;
+      border-top: 1px solid #eeeeee;
+      display: flex;
+      gap: 16px;
+      justify-content: center;
+    }
+    
+    /* Responsive */
+    @media (max-width: 768px) {
+      .container {
+        padding: 40px 24px 80px;
+      }
+      
+      .header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 24px;
+      }
+      
+      .header h1 {
+        font-size: 36px;
+      }
+      
+      .stats {
+        gap: 24px;
+      }
+      
+      .tabs {
+        flex-wrap: wrap;
+      }
+      
+      .tab {
+        flex: 1 1 calc(50% - 1px);
+        border-right: none;
+        border-bottom: 1px solid #000000;
+      }
+      
+      .card-actions {
+        flex-direction: column;
+      }
+      
+      .actions-bar {
+        flex-direction: column;
+      }
     }
   </style>
 </head>
 <body>
   <div class="container">
+    <!-- Header -->
     <div class="header">
-      <h1>🔐 管理后台</h1>
+      <h1>ADMIN PANEL</h1>
       <div class="stats" id="statsDisplay"></div>
     </div>
     
-    <!-- 登录区域 -->
+    <!-- Auth Section -->
     <div class="auth-section" id="authSection">
+      <h2>Administrator Access</h2>
       <div class="form-group">
-        <label for="password">管理员密码</label>
-        <input type="password" id="password" placeholder="输入密码" onkeypress="if(event.key==='Enter')login()">
-        <p class="hint">在 Netlify 环境变量中设置 ADMIN_PASSWORD</p>
+        <label>Password</label>
+        <input type="password" id="password" placeholder="Enter admin password" onkeypress="if(event.key==='Enter')login()">
+        <p class="hint">Set ADMIN_PASSWORD in Netlify environment variables</p>
       </div>
-      <button class="btn btn-primary" onclick="login()">登录</button>
+      <button class="btn btn-primary" onclick="login()">Login</button>
       <div class="message" id="authMessage"></div>
     </div>
     
-    <!-- 管理区域 -->
+    <!-- Admin Section -->
     <div class="admin-section" id="adminSection">
       <div class="message" id="message"></div>
       
       <div class="tabs">
-        <button class="tab active" onclick="switchTab('pending')">⏳ 待审核</button>
-        <button class="tab" onclick="switchTab('approved')">✅ 已通过</button>
-        <button class="tab" onclick="switchTab('rejected')">❌ 已拒绝</button>
-        <button class="tab" onclick="switchTab('all')">📋 全部</button>
+        <button class="tab active" onclick="switchTab('pending')">Pending</button>
+        <button class="tab" onclick="switchTab('approved')">Approved</button>
+        <button class="tab" onclick="switchTab('rejected')">Rejected</button>
+        <button class="tab" onclick="switchTab('all')">All</button>
       </div>
       
       <div class="tab-content active" id="pending-tab">
-        <div id="pendingList" class="loading">加载中...</div>
+        <div id="pendingList" class="loading">Loading submissions...</div>
       </div>
       
       <div class="tab-content" id="approved-tab">
-        <div id="approvedList" class="loading">加载中...</div>
+        <div id="approvedList" class="loading">Loading submissions...</div>
       </div>
       
       <div class="tab-content" id="rejected-tab">
-        <div id="rejectedList" class="loading">加载中...</div>
+        <div id="rejectedList" class="loading">Loading submissions...</div>
       </div>
       
       <div class="tab-content" id="all-tab">
-        <div id="allList" class="loading">加载中...</div>
+        <div id="allList" class="loading">Loading submissions...</div>
       </div>
       
-      <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 2px solid #e9ecef;">
-        <button class="btn btn-primary" onclick="loadSubmissions()">🔄 刷新列表</button>
-        <button class="btn" style="background: #6c757d; color: white; margin-left: 12px;" onclick="logout()">🚪 退出登录</button>
+      <div class="actions-bar">
+        <button class="btn btn-secondary" onclick="loadSubmissions()">Refresh</button>
+        <button class="btn btn-secondary" onclick="logout()">Logout</button>
       </div>
     </div>
   </div>
@@ -374,28 +542,27 @@
     let authToken = '';
     let submissions = [];
     
-    // 登录
+    // Login
     async function login() {
       const password = document.getElementById('password').value.trim();
       if (!password) {
-        showMessage('authMessage', '请输入密码', 'error');
+        showMessage('authMessage', 'Please enter password', 'error');
         return;
       }
       
       authToken = password;
       
-      // 验证密码并加载数据
       const success = await loadSubmissions();
       if (success) {
         document.getElementById('authSection').classList.add('hidden');
         document.getElementById('adminSection').classList.add('visible');
       } else {
-        showMessage('authMessage', '密码错误或无法连接服务器', 'error');
+        showMessage('authMessage', 'Invalid password or connection failed', 'error');
         authToken = '';
       }
     }
     
-    // 退出登录
+    // Logout
     function logout() {
       authToken = '';
       submissions = [];
@@ -404,7 +571,7 @@
       document.getElementById('password').value = '';
     }
     
-    // 加载提交列表
+    // Load submissions
     async function loadSubmissions() {
       try {
         const res = await fetch('/.netlify/functions/get-submissions', {
@@ -412,16 +579,14 @@
         });
         
         if (!res.ok) {
-          throw new Error('加载失败');
+          throw new Error('Failed to load');
         }
         
         const data = await res.json();
         submissions = data.submissions || [];
         
-        // 更新统计
         updateStats(data.stats);
         
-        // 渲染各个列表
         renderList('pending', submissions.filter(s => s.status === 'pending'));
         renderList('approved', submissions.filter(s => s.status === 'approved'));
         renderList('rejected', submissions.filter(s => s.status === 'rejected'));
@@ -434,7 +599,7 @@
       }
     }
     
-    // 更新统计数据
+    // Update stats
     function updateStats(stats) {
       const statsDisplay = document.getElementById('statsDisplay');
       if (!stats) {
@@ -445,28 +610,28 @@
       statsDisplay.innerHTML = `
         <div class="stat-item">
           <div class="number">${stats.pending || 0}</div>
-          <div class="label">待审核</div>
+          <div class="label">Pending</div>
         </div>
         <div class="stat-item">
           <div class="number">${stats.approved || 0}</div>
-          <div class="label">已通过</div>
+          <div class="label">Approved</div>
         </div>
         <div class="stat-item">
           <div class="number">${stats.total || 0}</div>
-          <div class="label">总计</div>
+          <div class="label">Total</div>
         </div>
       `;
     }
     
-    // 渲染列表
+    // Render list
     function renderList(type, items) {
       const container = document.getElementById(`${type}List`);
       
       if (items.length === 0) {
         container.innerHTML = `
           <div class="empty-state">
-            <div style="font-size: 48px;">📭</div>
-            <p>暂无${type === 'pending' ? '待审核' : type === 'approved' ? '已通过' : type === 'rejected' ? '已拒绝' : ''}内容</p>
+            <div class="icon">—</div>
+            <p>No ${type === 'pending' ? 'pending' : type === 'approved' ? 'approved' : type === 'rejected' ? 'rejected' : ''} submissions</p>
           </div>
         `;
         return;
@@ -475,42 +640,46 @@
       container.innerHTML = items.map(sub => `
         <div class="submission-card ${sub.status}">
           <div class="card-header">
-            <h3>《${sub.author}》</h3>
+            <h3>${sub.author || 'Unknown'}</h3>
             <span class="status-badge ${sub.status}">
-              ${sub.status === 'pending' ? '待审核' : sub.status === 'approved' ? '已通过' : '已拒绝'}
+              ${sub.status === 'pending' ? 'Pending' : sub.status === 'approved' ? 'Approved' : 'Rejected'}
             </span>
           </div>
           <div class="card-content">
-            <div><strong>语言：</strong>${sub.language === 'en' ? '英文' : sub.language === 'zh' ? '中文' : '双语'}</div>
+            <div class="meta-line"><strong>Language:</strong> ${sub.language === 'en' ? 'English' : sub.language === 'zh' ? 'Chinese' : 'Bilingual'}</div>
             <div class="lines">${sub.lines.join('\n')}</div>
             ${Object.keys(sub.translations || {}).length > 0 ? `
-              <div><strong>中文翻译：</strong></div>
-              ${Object.entries(sub.translations).map(([en, zh]) => `
-                <div style="font-size: 13px; color: #6c757d; margin: 4px 0;">
-                  • ${en} → ${zh}
-                </div>
-              `).join('')}
+              <div class="translations">
+                <strong>Translations:</strong>
+                ${Object.entries(sub.translations).map(([en, zh]) => `
+                  <div class="translation-item">${en} → ${zh}</div>
+                `).join('')}
+              </div>
             ` : ''}
             <div class="card-meta">
-              ${sub.submitterName ? `投稿人：${sub.submitterName} | ` : ''}
-              提交时间：${new Date(sub.submittedAt).toLocaleString('zh-CN')}
-              ${sub.approvedAt ? ` | 通过时间：${new Date(sub.approvedAt).toLocaleString('zh-CN')}` : ''}
-              ${sub.rejectedAt ? ` | 拒绝时间：${new Date(sub.rejectedAt).toLocaleString('zh-CN')}` : ''}
+              ${sub.submitterName ? `Submitted by: ${sub.submitterName} · ` : ''}
+              ${new Date(sub.submittedAt).toLocaleString('en-US', { 
+                year: 'numeric', 
+                month: 'short', 
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+              })}
             </div>
           </div>
           ${sub.status === 'pending' ? `
             <div class="card-actions">
-              <button class="btn btn-approve" onclick="approvePoem('${sub.id}')">✅ 通过并发布</button>
-              <button class="btn btn-reject" onclick="rejectPoem('${sub.id}')">❌ 拒绝</button>
+              <button class="btn btn-approve" onclick="approvePoem('${sub.id}')">Approve</button>
+              <button class="btn btn-reject" onclick="rejectPoem('${sub.id}')">Reject</button>
             </div>
           ` : ''}
         </div>
       `).join('');
     }
     
-    // 通过诗歌
+    // Approve poem
     async function approvePoem(submissionId) {
-      if (!confirm('确定通过并发布这首诗歌吗？')) return;
+      if (!confirm('Approve and publish this poem?')) return;
       
       try {
         const res = await fetch('/.netlify/functions/approve-poem', {
@@ -523,20 +692,20 @@
         });
         
         if (!res.ok) {
-          throw new Error('操作失败');
+          throw new Error('Operation failed');
         }
         
-        showMessage('message', '✅ 诗歌已通过并发布！', 'success');
+        showMessage('message', 'Poem approved and published successfully', 'success');
         await loadSubmissions();
         
       } catch (e) {
-        showMessage('message', `❌ 操作失败：${e.message}`, 'error');
+        showMessage('message', `Error: ${e.message}`, 'error');
       }
     }
     
-    // 拒绝诗歌
+    // Reject poem
     async function rejectPoem(submissionId) {
-      if (!confirm('确定拒绝这首诗歌吗？')) return;
+      if (!confirm('Reject this poem?')) return;
       
       try {
         const res = await fetch('/.netlify/functions/approve-poem', {
@@ -549,29 +718,27 @@
         });
         
         if (!res.ok) {
-          throw new Error('操作失败');
+          throw new Error('Operation failed');
         }
         
-        showMessage('message', '诗歌已拒绝', 'success');
+        showMessage('message', 'Poem rejected', 'success');
         await loadSubmissions();
         
       } catch (e) {
-        showMessage('message', `❌ 操作失败：${e.message}`, 'error');
+        showMessage('message', `Error: ${e.message}`, 'error');
       }
     }
     
-    // 切换标签页
+    // Switch tab
     function switchTab(tabName) {
-      // 更新标签按钮状态
       document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
       event.target.classList.add('active');
       
-      // 切换内容区域
       document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
       document.getElementById(`${tabName}-tab`).classList.add('active');
     }
     
-    // 显示消息
+    // Show message
     function showMessage(elementId, text, type) {
       const msg = document.getElementById(elementId);
       msg.textContent = text;
