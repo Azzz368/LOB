@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>投稿诗歌 - Library of Babel</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      padding: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .container {
+      max-width: 700px;
+      width: 100%;
+      background: white;
+      border-radius: 16px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+      overflow: hidden;
+    }
+    
+    .header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 40px 30px;
+      text-align: center;
+    }
+    
+    .header h1 {
+      font-size: 32px;
+      margin-bottom: 12px;
+    }
+    
+    .header p {
+      opacity: 0.95;
+      font-size: 15px;
+      line-height: 1.6;
+    }
+    
+    .form-container {
+      padding: 40px;
+    }
+    
+    .message {
+      padding: 16px;
+      border-radius: 8px;
+      margin-bottom: 24px;
+      font-size: 14px;
+      display: none;
+    }
+    
+    .message.visible {
+      display: block;
+    }
+    
+    .message.success {
+      background: #d4edda;
+      color: #155724;
+      border: 1px solid #c3e6cb;
+    }
+    
+    .message.error {
+      background: #f8d7da;
+      color: #721c24;
+      border: 1px solid #f5c6cb;
+    }
+    
+    .form-group {
+      margin-bottom: 24px;
+    }
+    
+    label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: 600;
+      color: #333;
+      font-size: 15px;
+    }
+    
+    label .required {
+      color: #dc3545;
+      margin-left: 4px;
+    }
+    
+    input[type="text"],
+    input[type="email"],
+    textarea {
+      width: 100%;
+      padding: 12px 16px;
+      border: 2px solid #e0e0e0;
+      border-radius: 8px;
+      font-size: 14px;
+      font-family: inherit;
+      transition: border-color 0.3s;
+    }
+    
+    input:focus,
+    textarea:focus {
+      outline: none;
+      border-color: #667eea;
+    }
+    
+    textarea {
+      min-height: 150px;
+      resize: vertical;
+      font-family: "Sitka", "SimSun", "宋体", serif;
+      line-height: 1.6;
+    }
+    
+    .hint {
+      font-size: 13px;
+      color: #6c757d;
+      margin-top: 6px;
+      line-height: 1.5;
+    }
+    
+    .translation-section {
+      background: #f8f9fa;
+      padding: 20px;
+      border-radius: 8px;
+      margin-bottom: 24px;
+    }
+    
+    .translation-section h3 {
+      color: #667eea;
+      font-size: 16px;
+      margin-bottom: 16px;
+    }
+    
+    .translation-pair {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+    
+    .translation-pair input {
+      font-size: 13px;
+    }
+    
+    button {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      padding: 14px 36px;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s;
+      width: 100%;
+    }
+    
+    button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(102, 126, 234, 0.4);
+    }
+    
+    button:active {
+      transform: translateY(0);
+    }
+    
+    button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+    
+    .add-translation-btn {
+      background: #28a745;
+      margin-top: 12px;
+      width: auto;
+      padding: 10px 24px;
+      font-size: 14px;
+    }
+    
+    .add-translation-btn:hover {
+      box-shadow: 0 6px 20px rgba(40, 167, 69, 0.4);
+    }
+    
+    .loading {
+      display: inline-block;
+      width: 16px;
+      height: 16px;
+      border: 2px solid rgba(255,255,255,0.3);
+      border-radius: 50%;
+      border-top-color: white;
+      animation: spin 0.8s linear infinite;
+      margin-left: 8px;
+      vertical-align: middle;
+    }
+    
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    
+    .footer-links {
+      text-align: center;
+      padding: 20px;
+      border-top: 1px solid #e9ecef;
+      font-size: 14px;
+    }
+    
+    .footer-links a {
+      color: #667eea;
+      text-decoration: none;
+      margin: 0 12px;
+    }
+    
+    .footer-links a:hover {
+      text-decoration: underline;
+    }
+    
+    .language-selector {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+    
+    .language-selector button {
+      flex: 1;
+      padding: 10px;
+      font-size: 14px;
+      background: #e9ecef;
+      color: #495057;
+    }
+    
+    .language-selector button.active {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>📝 投稿诗歌</h1>
+      <p>分享你的诗歌作品或喜爱的诗句<br>审核通过后将展示在转筒上</p>
+    </div>
+    
+    <div class="form-container">
+      <div class="message" id="message"></div>
+      
+      <form id="submitForm">
+        <div class="form-group">
+          <label>
+            诗歌语言
+            <span class="required">*</span>
+          </label>
+          <div class="language-selector">
+            <button type="button" class="lang-btn active" data-lang="en" onclick="selectLanguage('en')">英文</button>
+            <button type="button" class="lang-btn" data-lang="zh" onclick="selectLanguage('zh')">中文</button>
+            <button type="button" class="lang-btn" data-lang="both" onclick="selectLanguage('both')">双语</button>
+          </div>
+          <input type="hidden" id="language" name="language" value="en">
+        </div>
+        
+        <div class="form-group">
+          <label for="author">
+            作者
+            <span class="required">*</span>
+          </label>
+          <input type="text" id="author" name="author" placeholder="例如：Pablo Neruda / 聂鲁达" required>
+          <p class="hint">请填写诗歌的原作者姓名</p>
+        </div>
+        
+        <div class="form-group">
+          <label for="lines">
+            诗句内容
+            <span class="required">*</span>
+          </label>
+          <textarea id="lines" name="lines" placeholder="请输入诗句，每行一句&#10;支持多行输入&#10;&#10;例如：&#10;Leaning into the afternoons I cast my sad nets&#10;towards your oceanic eyes." required></textarea>
+          <p class="hint">每行会被作为独立的诗句显示在转筒上，请确保格式正确</p>
+        </div>
+        
+        <div class="translation-section" id="translationSection" style="display: none;">
+          <h3>中文翻译对照（可选）</h3>
+          <div id="translationsContainer">
+            <div class="translation-pair">
+              <input type="text" placeholder="英文原句" class="trans-en">
+              <input type="text" placeholder="中文翻译" class="trans-zh">
+            </div>
+          </div>
+          <button type="button" class="add-translation-btn" onclick="addTranslationPair()">+ 添加更多翻译</button>
+          <p class="hint">如果是双语诗歌，请在左侧输入完整英文句子，右侧输入对应中文翻译</p>
+        </div>
+        
+        <div class="form-group">
+          <label for="submitterName">
+            你的名字（可选）
+          </label>
+          <input type="text" id="submitterName" name="submitterName" placeholder="留下你的名字（可不填）">
+        </div>
+        
+        <div class="form-group">
+          <label for="submitterEmail">
+            联系邮箱（可选）
+          </label>
+          <input type="email" id="submitterEmail" name="submitterEmail" placeholder="example@email.com">
+          <p class="hint">如需通知审核结果，请留下邮箱（不会公开显示）</p>
+        </div>
+        
+        <button type="submit" id="submitBtn">提交诗歌</button>
+      </form>
+    </div>
+    
+    <div class="footer-links">
+      <a href="/">返回主页</a>
+      <a href="/admin.html">管理员入口</a>
+    </div>
+  </div>
+
+  <script>
+    let currentLanguage = 'en';
+    
+    // 语言选择
+    function selectLanguage(lang) {
+      currentLanguage = lang;
+      document.getElementById('language').value = lang;
+      
+      // 更新按钮状态
+      document.querySelectorAll('.lang-btn').forEach(btn => {
+        btn.classList.remove('active');
+        if (btn.dataset.lang === lang) {
+          btn.classList.add('active');
+        }
+      });
+      
+      // 显示/隐藏翻译区域
+      const translationSection = document.getElementById('translationSection');
+      if (lang === 'both' || lang === 'en') {
+        translationSection.style.display = 'block';
+      } else {
+        translationSection.style.display = 'none';
+      }
+    }
+    
+    // 添加翻译对
+    function addTranslationPair() {
+      const container = document.getElementById('translationsContainer');
+      const pair = document.createElement('div');
+      pair.className = 'translation-pair';
+      pair.innerHTML = `
+        <input type="text" placeholder="英文原句" class="trans-en">
+        <input type="text" placeholder="中文翻译" class="trans-zh">
+      `;
+      container.appendChild(pair);
+    }
+    
+    // 表单提交
+    document.getElementById('submitForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      const submitBtn = document.getElementById('submitBtn');
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = '提交中<span class="loading"></span>';
+      
+      try {
+        // 收集表单数据
+        const author = document.getElementById('author').value.trim();
+        const linesText = document.getElementById('lines').value.trim();
+        const lines = linesText.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+        const language = document.getElementById('language').value;
+        const submitterName = document.getElementById('submitterName').value.trim();
+        const submitterEmail = document.getElementById('submitterEmail').value.trim();
+        
+        if (!author || lines.length === 0) {
+          throw new Error('请填写作者和诗句内容');
+        }
+        
+        // 收集翻译对照
+        const translations = {};
+        if (language === 'both' || language === 'en') {
+          const pairs = document.querySelectorAll('.translation-pair');
+          pairs.forEach(pair => {
+            const en = pair.querySelector('.trans-en').value.trim();
+            const zh = pair.querySelector('.trans-zh').value.trim();
+            if (en && zh) {
+              translations[en] = zh;
+            }
+          });
+        }
+        
+        // 构建提交数据
+        const submission = {
+          author,
+          lines,
+          language,
+          translations,
+          submitterName,
+          submitterEmail,
+          submittedAt: new Date().toISOString()
+        };
+        
+        // 发送到后端
+        const res = await fetch('/.netlify/functions/submit-poem', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(submission)
+        });
+        
+        if (!res.ok) {
+          const error = await res.text();
+          throw new Error(error || '提交失败');
+        }
+        
+        const result = await res.json();
+        
+        // 显示成功消息
+        showMessage(`✅ 提交成功！你的诗歌已进入审核队列，感谢分享！`, 'success');
+        
+        // 重置表单
+        document.getElementById('submitForm').reset();
+        selectLanguage('en');
+        document.getElementById('translationsContainer').innerHTML = `
+          <div class="translation-pair">
+            <input type="text" placeholder="英文原句" class="trans-en">
+            <input type="text" placeholder="中文翻译" class="trans-zh">
+          </div>
+        `;
+        
+        // 5秒后清除消息
+        setTimeout(() => {
+          document.getElementById('message').classList.remove('visible');
+        }, 5000);
+        
+      } catch (e) {
+        showMessage(`❌ ${e.message}`, 'error');
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '提交诗歌';
+      }
+    });
+    
+    // 显示消息
+    function showMessage(text, type) {
+      const msg = document.getElementById('message');
+      msg.textContent = text;
+      msg.className = `message visible ${type}`;
+    }
+  </script>
+</body>
+</html>
+

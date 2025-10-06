@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>管理后台 - Library of Babel</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      padding: 20px;
+    }
+    
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 16px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+      overflow: hidden;
+    }
+    
+    .header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 30px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    .header h1 {
+      font-size: 28px;
+    }
+    
+    .header .stats {
+      display: flex;
+      gap: 20px;
+      font-size: 14px;
+    }
+    
+    .stat-item {
+      text-align: center;
+    }
+    
+    .stat-item .number {
+      font-size: 24px;
+      font-weight: bold;
+    }
+    
+    .stat-item .label {
+      opacity: 0.9;
+      font-size: 12px;
+    }
+    
+    .auth-section {
+      padding: 40px;
+      text-align: center;
+    }
+    
+    .auth-section.hidden {
+      display: none;
+    }
+    
+    .admin-section {
+      display: none;
+      padding: 30px;
+    }
+    
+    .admin-section.visible {
+      display: block;
+    }
+    
+    .tabs {
+      display: flex;
+      gap: 0;
+      border-bottom: 2px solid #e9ecef;
+      margin-bottom: 30px;
+    }
+    
+    .tab {
+      padding: 12px 24px;
+      background: transparent;
+      border: none;
+      font-size: 15px;
+      font-weight: 600;
+      color: #6c757d;
+      cursor: pointer;
+      border-bottom: 3px solid transparent;
+      transition: all 0.3s;
+    }
+    
+    .tab.active {
+      color: #667eea;
+      border-bottom-color: #667eea;
+    }
+    
+    .tab-content {
+      display: none;
+    }
+    
+    .tab-content.active {
+      display: block;
+    }
+    
+    .submission-card {
+      background: #f8f9fa;
+      border: 2px solid #e9ecef;
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 20px;
+      transition: box-shadow 0.3s;
+    }
+    
+    .submission-card:hover {
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+    
+    .submission-card.pending {
+      border-left: 4px solid #ffc107;
+    }
+    
+    .submission-card.approved {
+      border-left: 4px solid #28a745;
+      opacity: 0.8;
+    }
+    
+    .submission-card.rejected {
+      border-left: 4px solid #dc3545;
+      opacity: 0.8;
+    }
+    
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+    
+    .card-header h3 {
+      color: #333;
+      font-size: 18px;
+    }
+    
+    .status-badge {
+      padding: 4px 12px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    
+    .status-badge.pending {
+      background: #fff3cd;
+      color: #856404;
+    }
+    
+    .status-badge.approved {
+      background: #d4edda;
+      color: #155724;
+    }
+    
+    .status-badge.rejected {
+      background: #f8d7da;
+      color: #721c24;
+    }
+    
+    .card-content {
+      margin-bottom: 16px;
+    }
+    
+    .card-content .lines {
+      background: white;
+      padding: 12px;
+      border-radius: 6px;
+      margin: 8px 0;
+      font-family: "Sitka", "SimSun", "宋体", serif;
+      line-height: 1.6;
+      white-space: pre-wrap;
+    }
+    
+    .card-meta {
+      font-size: 13px;
+      color: #6c757d;
+      margin-top: 8px;
+    }
+    
+    .card-actions {
+      display: flex;
+      gap: 12px;
+      justify-content: flex-end;
+    }
+    
+    .btn {
+      padding: 8px 20px;
+      border: none;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+    
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    
+    .btn-approve {
+      background: #28a745;
+      color: white;
+    }
+    
+    .btn-approve:hover:not(:disabled) {
+      background: #218838;
+    }
+    
+    .btn-reject {
+      background: #dc3545;
+      color: white;
+    }
+    
+    .btn-reject:hover:not(:disabled) {
+      background: #c82333;
+    }
+    
+    .btn-primary {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 12px 32px;
+    }
+    
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+    }
+    
+    .form-group {
+      margin-bottom: 24px;
+    }
+    
+    label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: 600;
+      color: #333;
+      font-size: 14px;
+    }
+    
+    input[type="password"] {
+      width: 100%;
+      max-width: 300px;
+      padding: 12px 16px;
+      border: 2px solid #e0e0e0;
+      border-radius: 8px;
+      font-size: 14px;
+      transition: border-color 0.3s;
+    }
+    
+    input:focus {
+      outline: none;
+      border-color: #667eea;
+    }
+    
+    .message {
+      padding: 16px;
+      border-radius: 8px;
+      margin-bottom: 24px;
+      font-size: 14px;
+      display: none;
+    }
+    
+    .message.visible {
+      display: block;
+    }
+    
+    .message.success {
+      background: #d4edda;
+      color: #155724;
+      border: 1px solid #c3e6cb;
+    }
+    
+    .message.error {
+      background: #f8d7da;
+      color: #721c24;
+      border: 1px solid #f5c6cb;
+    }
+    
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: #6c757d;
+    }
+    
+    .empty-state svg {
+      width: 100px;
+      height: 100px;
+      margin-bottom: 20px;
+      opacity: 0.3;
+    }
+    
+    .loading {
+      text-align: center;
+      padding: 40px;
+      color: #6c757d;
+    }
+    
+    .hint {
+      font-size: 12px;
+      color: #6c757d;
+      margin-top: 4px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>🔐 管理后台</h1>
+      <div class="stats" id="statsDisplay"></div>
+    </div>
+    
+    <!-- 登录区域 -->
+    <div class="auth-section" id="authSection">
+      <div class="form-group">
+        <label for="password">管理员密码</label>
+        <input type="password" id="password" placeholder="输入密码" onkeypress="if(event.key==='Enter')login()">
+        <p class="hint">在 Netlify 环境变量中设置 ADMIN_PASSWORD</p>
+      </div>
+      <button class="btn btn-primary" onclick="login()">登录</button>
+      <div class="message" id="authMessage"></div>
+    </div>
+    
+    <!-- 管理区域 -->
+    <div class="admin-section" id="adminSection">
+      <div class="message" id="message"></div>
+      
+      <div class="tabs">
+        <button class="tab active" onclick="switchTab('pending')">⏳ 待审核</button>
+        <button class="tab" onclick="switchTab('approved')">✅ 已通过</button>
+        <button class="tab" onclick="switchTab('rejected')">❌ 已拒绝</button>
+        <button class="tab" onclick="switchTab('all')">📋 全部</button>
+      </div>
+      
+      <div class="tab-content active" id="pending-tab">
+        <div id="pendingList" class="loading">加载中...</div>
+      </div>
+      
+      <div class="tab-content" id="approved-tab">
+        <div id="approvedList" class="loading">加载中...</div>
+      </div>
+      
+      <div class="tab-content" id="rejected-tab">
+        <div id="rejectedList" class="loading">加载中...</div>
+      </div>
+      
+      <div class="tab-content" id="all-tab">
+        <div id="allList" class="loading">加载中...</div>
+      </div>
+      
+      <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 2px solid #e9ecef;">
+        <button class="btn btn-primary" onclick="loadSubmissions()">🔄 刷新列表</button>
+        <button class="btn" style="background: #6c757d; color: white; margin-left: 12px;" onclick="logout()">🚪 退出登录</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let authToken = '';
+    let submissions = [];
+    
+    // 登录
+    async function login() {
+      const password = document.getElementById('password').value.trim();
+      if (!password) {
+        showMessage('authMessage', '请输入密码', 'error');
+        return;
+      }
+      
+      authToken = password;
+      
+      // 验证密码并加载数据
+      const success = await loadSubmissions();
+      if (success) {
+        document.getElementById('authSection').classList.add('hidden');
+        document.getElementById('adminSection').classList.add('visible');
+      } else {
+        showMessage('authMessage', '密码错误或无法连接服务器', 'error');
+        authToken = '';
+      }
+    }
+    
+    // 退出登录
+    function logout() {
+      authToken = '';
+      submissions = [];
+      document.getElementById('authSection').classList.remove('hidden');
+      document.getElementById('adminSection').classList.remove('visible');
+      document.getElementById('password').value = '';
+    }
+    
+    // 加载提交列表
+    async function loadSubmissions() {
+      try {
+        const res = await fetch('/.netlify/functions/get-submissions', {
+          headers: { 'Authorization': `Bearer ${authToken}` }
+        });
+        
+        if (!res.ok) {
+          throw new Error('加载失败');
+        }
+        
+        const data = await res.json();
+        submissions = data.submissions || [];
+        
+        // 更新统计
+        updateStats(data.stats);
+        
+        // 渲染各个列表
+        renderList('pending', submissions.filter(s => s.status === 'pending'));
+        renderList('approved', submissions.filter(s => s.status === 'approved'));
+        renderList('rejected', submissions.filter(s => s.status === 'rejected'));
+        renderList('all', submissions);
+        
+        return true;
+      } catch (e) {
+        console.error('Load error:', e);
+        return false;
+      }
+    }
+    
+    // 更新统计数据
+    function updateStats(stats) {
+      const statsDisplay = document.getElementById('statsDisplay');
+      if (!stats) {
+        statsDisplay.innerHTML = '';
+        return;
+      }
+      
+      statsDisplay.innerHTML = `
+        <div class="stat-item">
+          <div class="number">${stats.pending || 0}</div>
+          <div class="label">待审核</div>
+        </div>
+        <div class="stat-item">
+          <div class="number">${stats.approved || 0}</div>
+          <div class="label">已通过</div>
+        </div>
+        <div class="stat-item">
+          <div class="number">${stats.total || 0}</div>
+          <div class="label">总计</div>
+        </div>
+      `;
+    }
+    
+    // 渲染列表
+    function renderList(type, items) {
+      const container = document.getElementById(`${type}List`);
+      
+      if (items.length === 0) {
+        container.innerHTML = `
+          <div class="empty-state">
+            <div style="font-size: 48px;">📭</div>
+            <p>暂无${type === 'pending' ? '待审核' : type === 'approved' ? '已通过' : type === 'rejected' ? '已拒绝' : ''}内容</p>
+          </div>
+        `;
+        return;
+      }
+      
+      container.innerHTML = items.map(sub => `
+        <div class="submission-card ${sub.status}">
+          <div class="card-header">
+            <h3>《${sub.author}》</h3>
+            <span class="status-badge ${sub.status}">
+              ${sub.status === 'pending' ? '待审核' : sub.status === 'approved' ? '已通过' : '已拒绝'}
+            </span>
+          </div>
+          <div class="card-content">
+            <div><strong>语言：</strong>${sub.language === 'en' ? '英文' : sub.language === 'zh' ? '中文' : '双语'}</div>
+            <div class="lines">${sub.lines.join('\n')}</div>
+            ${Object.keys(sub.translations || {}).length > 0 ? `
+              <div><strong>中文翻译：</strong></div>
+              ${Object.entries(sub.translations).map(([en, zh]) => `
+                <div style="font-size: 13px; color: #6c757d; margin: 4px 0;">
+                  • ${en} → ${zh}
+                </div>
+              `).join('')}
+            ` : ''}
+            <div class="card-meta">
+              ${sub.submitterName ? `投稿人：${sub.submitterName} | ` : ''}
+              提交时间：${new Date(sub.submittedAt).toLocaleString('zh-CN')}
+              ${sub.approvedAt ? ` | 通过时间：${new Date(sub.approvedAt).toLocaleString('zh-CN')}` : ''}
+              ${sub.rejectedAt ? ` | 拒绝时间：${new Date(sub.rejectedAt).toLocaleString('zh-CN')}` : ''}
+            </div>
+          </div>
+          ${sub.status === 'pending' ? `
+            <div class="card-actions">
+              <button class="btn btn-approve" onclick="approvePoem('${sub.id}')">✅ 通过并发布</button>
+              <button class="btn btn-reject" onclick="rejectPoem('${sub.id}')">❌ 拒绝</button>
+            </div>
+          ` : ''}
+        </div>
+      `).join('');
+    }
+    
+    // 通过诗歌
+    async function approvePoem(submissionId) {
+      if (!confirm('确定通过并发布这首诗歌吗？')) return;
+      
+      try {
+        const res = await fetch('/.netlify/functions/approve-poem', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${authToken}`
+          },
+          body: JSON.stringify({ submissionId, action: 'approve' })
+        });
+        
+        if (!res.ok) {
+          throw new Error('操作失败');
+        }
+        
+        showMessage('message', '✅ 诗歌已通过并发布！', 'success');
+        await loadSubmissions();
+        
+      } catch (e) {
+        showMessage('message', `❌ 操作失败：${e.message}`, 'error');
+      }
+    }
+    
+    // 拒绝诗歌
+    async function rejectPoem(submissionId) {
+      if (!confirm('确定拒绝这首诗歌吗？')) return;
+      
+      try {
+        const res = await fetch('/.netlify/functions/approve-poem', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${authToken}`
+          },
+          body: JSON.stringify({ submissionId, action: 'reject' })
+        });
+        
+        if (!res.ok) {
+          throw new Error('操作失败');
+        }
+        
+        showMessage('message', '诗歌已拒绝', 'success');
+        await loadSubmissions();
+        
+      } catch (e) {
+        showMessage('message', `❌ 操作失败：${e.message}`, 'error');
+      }
+    }
+    
+    // 切换标签页
+    function switchTab(tabName) {
+      // 更新标签按钮状态
+      document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+      event.target.classList.add('active');
+      
+      // 切换内容区域
+      document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+      document.getElementById(`${tabName}-tab`).classList.add('active');
+    }
+    
+    // 显示消息
+    function showMessage(elementId, text, type) {
+      const msg = document.getElementById(elementId);
+      msg.textContent = text;
+      msg.className = `message visible ${type}`;
+      setTimeout(() => {
+        msg.classList.remove('visible');
+      }, 5000);
+    }
+  </script>
+</body>
+</html>

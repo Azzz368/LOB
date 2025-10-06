@@ -1,6 +1,7 @@
-// netlify/functions/poems.js
+import { getStore } from "@netlify/blobs";
+
 export default async (req, context) => {
-  // 可选：如果你先不放JSON，就用这个内置兜底数据（示例）
+  // 兜底数据（首次使用或 Blob Store 为空时）
   const fallback = {
     poems: [
       {
@@ -28,21 +29,55 @@ export default async (req, context) => {
     updatedAt: new Date().toISOString()
   };
 
-  // 可配置：通过环境变量 POEMS_JSON_URL 指定 JSON 源（否则用默认示例仓库）
-  const GITHUB_RAW = (process.env.POEMS_JSON_URL || "https://raw.githubusercontent.com/Azzz368/threejspj1/main/poems.json");
   try {
-    const r = await fetch(GITHUB_RAW, { cache: "no-store" });
-    if (r.ok) {
-      const json = await r.json();
-      return new Response(JSON.stringify(json), {
-        headers: { "Content-Type": "application/json", "Cache-Control": "no-store" }
+    // 优先从 Netlify Blob Store 读取
+    const store = getStore({
+      name: "poems-data",
+      siteID: process.env.SITE_ID,
+      token: process.env.NETLIFY_TOKEN || context.env?.NETLIFY_TOKEN
+    });
+    
+    const data = await store.get("poems", { type: "json" });
+    
+    if (data && data.poems && data.poems.length > 0) {
+      return new Response(JSON.stringify(data), {
+        headers: { 
+          "Content-Type": "application/json", 
+          "Cache-Control": "no-store, must-revalidate",
+          "Access-Control-Allow-Origin": "*"
+        }
       });
     }
   } catch (e) {
-    // ignore
+    console.warn('Blob Store read error:', e);
   }
 
+  // 如果 Blob Store 为空，尝试外部 JSON URL（可选）
+  const POEMS_JSON_URL = process.env.POEMS_JSON_URL;
+  if (POEMS_JSON_URL) {
+    try {
+      const r = await fetch(POEMS_JSON_URL, { cache: "no-store" });
+      if (r.ok) {
+        const json = await r.json();
+        return new Response(JSON.stringify(json), {
+          headers: { 
+            "Content-Type": "application/json", 
+            "Cache-Control": "no-store",
+            "Access-Control-Allow-Origin": "*"
+          }
+        });
+      }
+    } catch (e) {
+      console.warn('External JSON fetch error:', e);
+    }
+  }
+
+  // 最终回退到内置示例数据
   return new Response(JSON.stringify(fallback), {
-    headers: { "Content-Type": "application/json", "Cache-Control": "no-store" }
+    headers: { 
+      "Content-Type": "application/json", 
+      "Cache-Control": "no-store",
+      "Access-Control-Allow-Origin": "*"
+    }
   });
 }

@@ -5,6 +5,7 @@
     "preview": "vite preview --port 5173"
   },
   "dependencies": {
+    "@netlify/blobs": "^8.1.0",
     "three": "^0.180.0"
   },
   "devDependencies": {
