@@ -645,47 +645,98 @@ function removeLoadingOverlay() {
   }
 }
 
-// 左下角信息块：固定展示诗歌出处
-const footerInfo = document.createElement('div');
-footerInfo.style.position = 'fixed';
-footerInfo.style.left = '10px';
-footerInfo.style.bottom = '10px';
-footerInfo.style.zIndex = '9999';
-footerInfo.style.pointerEvents = 'none';
-footerInfo.style.maxWidth = '420px';
-footerInfo.style.userSelect = 'none';
+// 左侧滑出信息面板：展示诗歌出处
+const sidePanel = document.createElement('div');
+sidePanel.style.position = 'fixed';
+sidePanel.style.left = '-220px'; // 初始只露出10px
+sidePanel.style.top = '0';
+sidePanel.style.bottom = '0';
+sidePanel.style.width = '190px';
+sidePanel.style.padding = '0';
+sidePanel.style.background = 'rgba(255, 255, 255, 0.95)';
+sidePanel.style.zIndex = '9999';
+sidePanel.style.transition = 'left 0.4s cubic-bezier(0.4, 0, 0.2, 1)';
+sidePanel.style.userSelect = 'none';
+sidePanel.style.boxShadow = '2px 0 10px rgba(0,0,0,0.1)';
+sidePanel.style.display = 'flex';
+sidePanel.style.flexDirection = 'column';
+sidePanel.style.justifyContent = 'center';
+sidePanel.style.paddingLeft = '10px';
+sidePanel.style.paddingRight = '10px';
 
-function addFooterLine(enText, zhText) {
+function addPanelLine(enText, zhText) {
   const line = document.createElement('div');
-  line.style.marginTop = '6px';
+  line.style.marginBottom = '16px';
 
   const en = document.createElement('div');
   en.style.fontFamily = '"Sitka", serif';
-  en.style.fontSize = '17px'; // 
-  en.style.color = '#888888'; // 
+  en.style.fontSize = '13px';
+  en.style.color = '#333333';
   en.style.fontWeight = '600';
   en.style.textAlign = 'left';
+  en.style.lineHeight = '1.4';
   en.textContent = enText;
 
   const zh = document.createElement('div');
   zh.style.fontFamily = 'SimSun, "宋体", serif';
-  zh.style.fontSize = '15px'; // 
-  zh.style.color = '#B0B0B0'; // 
+  zh.style.fontSize = '12px';
+  zh.style.color = '#666666';
   zh.style.fontWeight = '400';
   zh.style.textAlign = 'left';
+  zh.style.lineHeight = '1.5';
+  zh.style.marginTop = '4px';
   zh.textContent = zhText;
 
   line.appendChild(en);
   line.appendChild(zh);
-  footerInfo.appendChild(line);
+  sidePanel.appendChild(line);
 }
 
-addFooterLine('Poems by Pablo Neruda——', '诗歌选自聂鲁达——');
-addFooterLine('VII Leaning into the afternoon', '七，倚身在暮色里');
-addFooterLine('XIII I have gone marking', '十三，我以火的十字');
-addFooterLine('XX A Song of Despair (excerpt)', '二十，一首绝望的歌（节选）');
+addPanelLine('Poems by Pablo Neruda——', '诗歌选自聂鲁达——');
+addPanelLine('VII Leaning into the afternoon', '七，倚身在暮色里');
+addPanelLine('XIII I have gone marking', '十三，我以火的十字');
+addPanelLine('XX A Song of Despair (excerpt)', '二十，一首绝望的歌（节选）');
 
-document.body.appendChild(footerInfo);
+document.body.appendChild(sidePanel);
+
+// 左侧提示线（在面板露出的10px边缘）
+const hintLine = document.createElement('div');
+hintLine.style.position = 'fixed';
+hintLine.style.left = '8px';
+hintLine.style.top = '50%';
+hintLine.style.transform = 'translateY(-50%)';
+hintLine.style.width = '1px';
+hintLine.style.height = '580px';
+hintLine.style.background = '#cccccc';
+hintLine.style.zIndex = '10000';
+hintLine.style.transition = 'opacity 1s ease';
+hintLine.style.opacity = '1';
+hintLine.style.pointerEvents = 'none';
+document.body.appendChild(hintLine);
+
+// 提示线动画：每3秒淡出，1秒内重新显示
+setInterval(() => {
+  hintLine.style.opacity = '0';
+  setTimeout(() => {
+    hintLine.style.opacity = '1';
+  }, 1000);
+}, 3000);
+
+// 鼠标悬停左侧显示面板
+let sidePanelTimeout;
+document.addEventListener('mousemove', (e) => {
+  if (e.clientX < 50) {
+    // 鼠标在左侧50px内，显示面板
+    sidePanel.style.left = '0';
+    clearTimeout(sidePanelTimeout);
+  } else if (e.clientX > 200) {
+    // 鼠标移出210px外，0.5s后隐藏
+    clearTimeout(sidePanelTimeout);
+    sidePanelTimeout = setTimeout(() => {
+      sidePanel.style.left = '-225px';
+    }, 200);
+  }
+});
 
 
 window.addEventListener('resize', () => {
@@ -853,10 +904,38 @@ function scheduleDailyRefresh() {
 (async function initRemoteLoad() {
   currentPoemText = poemText; // 初始化当前文本
   if (REMOTE_ENDPOINT) {
+    console.log('Fetching poems from:', REMOTE_ENDPOINT);
     const remote = await fetchRemotePoems();
-    appendPoemsToSource(remote);
+    if (remote && remote.poems) {
+      console.log('Loaded poems:', remote.poems.length);
+      appendPoemsToSource(remote);
+    } else {
+      console.warn('No poems received from API');
+    }
     scheduleDailyRefresh();
+  } else {
+    console.warn('REMOTE_ENDPOINT not configured');
   }
 })();
+
+// 添加手动刷新功能（按 R 键刷新诗歌）
+window.addEventListener('keydown', async (e) => {
+  if (e.key === 'r' || e.key === 'R') {
+    console.log('Manual refresh triggered');
+    if (REMOTE_ENDPOINT) {
+      const remote = await fetchRemotePoems();
+      if (remote && remote.poems) {
+        console.log('Refreshed poems:', remote.poems.length);
+        // 清空当前文本，重新加载
+        currentPoemText = poemText;
+        poemLines.length = 0;
+        poemSource.split('\n').filter(l => l.trim().length > 0).forEach(line => {
+          poemLines.push(line);
+        });
+        appendPoemsToSource(remote);
+      }
+    }
+  }
+});
 
 animate();
