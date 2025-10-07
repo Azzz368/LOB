@@ -567,6 +567,9 @@ function testIntersect(e) {
 }
 
 renderer.domElement.addEventListener('pointermove', (e) => {
+  // 搜索状态下不响应鼠标悬停
+  if (isSearching) return;
+  
   const res = testIntersect(e);
   pauseRotation = !!res;
   targetRotationSpeed = pauseRotation ? 0 : rotationSpeed;
@@ -607,6 +610,9 @@ renderer.domElement.addEventListener('pointermove', (e) => {
 });
 
 renderer.domElement.addEventListener('mouseleave', () => {
+  // 搜索状态下不清除
+  if (isSearching) return;
+  
   pauseRotation = false;
   targetRotationSpeed = rotationSpeed;
   hoveredWordIndex = -1;
@@ -731,11 +737,10 @@ function updateSidePanel(poemsData) {
       return;
     }
     
-    // 显示作者和来源
-    const authorLine = `${poem.author || 'Unknown'}`;
-    const sourceLine = `${poem.source}`;
+    // 显示格式：Poems by "author"—"source"
+    const displayLine = `Poems by ${poem.author || 'Unknown'}—${poem.source}`;
     
-    addPanelLine(authorLine, sourceLine);
+    addPanelLine(displayLine, '');
   });
   
   // 添加更新时间
@@ -793,6 +798,126 @@ document.addEventListener('mousemove', (e) => {
   }
 });
 
+// 创建搜索栏（瑞士极简风格）
+const searchContainer = document.createElement('div');
+searchContainer.style.position = 'fixed';
+searchContainer.style.top = '40px';
+searchContainer.style.right = '40px';
+searchContainer.style.zIndex = '9999';
+searchContainer.style.display = 'flex';
+searchContainer.style.alignItems = 'center';
+searchContainer.style.gap = '12px';
+
+const searchLabel = document.createElement('div');
+searchLabel.style.fontFamily = '"Sitka", serif';
+searchLabel.style.fontSize = '11px';
+searchLabel.style.fontWeight = '600';
+searchLabel.style.letterSpacing = '0.08em';
+searchLabel.style.textTransform = 'uppercase';
+searchLabel.style.color = '#000000';
+searchLabel.textContent = 'Search';
+searchContainer.appendChild(searchLabel);
+
+const searchInput = document.createElement('input');
+searchInput.type = 'text';
+searchInput.placeholder = 'Enter keyword...';
+searchInput.style.width = '220px';
+searchInput.style.padding = '10px 0';
+searchInput.style.border = 'none';
+searchInput.style.borderBottom = '1px solid #cccccc';
+searchInput.style.fontFamily = '"Sitka", serif';
+searchInput.style.fontSize = '14px';
+searchInput.style.background = 'transparent';
+searchInput.style.color = '#000000';
+searchInput.style.outline = 'none';
+searchInput.style.transition = 'border-color 0.3s ease';
+
+searchInput.addEventListener('focus', () => {
+  searchInput.style.borderBottomColor = '#000000';
+});
+
+searchInput.addEventListener('blur', () => {
+  searchInput.style.borderBottomColor = '#cccccc';
+});
+
+searchContainer.appendChild(searchInput);
+document.body.appendChild(searchContainer);
+
+// 搜索功能逻辑
+let isSearching = false;
+let searchKeyword = '';
+
+searchInput.addEventListener('input', (e) => {
+  searchKeyword = e.target.value.trim().toLowerCase();
+  
+  if (searchKeyword) {
+    isSearching = true;
+    pauseRotation = true;
+    targetRotationSpeed = 0;
+    applySearchHighlight(searchKeyword);
+  } else {
+    isSearching = false;
+    pauseRotation = false;
+    targetRotationSpeed = rotationSpeed;
+    clearSearchHighlight();
+  }
+});
+
+searchInput.addEventListener('blur', () => {
+  if (!searchKeyword) {
+    isSearching = false;
+    pauseRotation = false;
+    targetRotationSpeed = rotationSpeed;
+    clearSearchHighlight();
+  }
+});
+
+// 应用搜索高亮
+function applySearchHighlight(keyword) {
+  // 找到所有匹配的单词
+  const matchedIndices = [];
+  wordBoxes.forEach((box, index) => {
+    const wordLower = box.text.toLowerCase();
+    if (wordLower.includes(keyword)) {
+      matchedIndices.push(index);
+    }
+  });
+  
+  if (matchedIndices.length === 0) {
+    // 没有匹配，显示所有为灰色
+    targetDimOpacity = MAX_DIM_OPACITY;
+    hoveredWordIndex = -1;
+    return;
+  }
+  
+  // 重绘覆盖层：非匹配单词变灰
+  overlayCtx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
+  
+  const scale = 0.5;
+  overlayCtx.fillStyle = '#FAFAFA';
+  overlayCtx.font = `${baseFontSize * scale}px "Sitka", serif`;
+  overlayCtx.textAlign = 'left';
+  overlayCtx.textBaseline = 'top';
+  
+  wordBoxes.forEach((box, index) => {
+    if (!matchedIndices.includes(index)) {
+      overlayCtx.fillText(box.text, box.x * scale, box.y * scale);
+    }
+  });
+  
+  overlayTexture.needsUpdate = true;
+  targetDimOpacity = MAX_DIM_OPACITY;
+  lastHoveredWordIndex = -2; // 标记为搜索状态
+}
+
+// 清除搜索高亮
+function clearSearchHighlight() {
+  overlayCtx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
+  overlayTexture.needsUpdate = true;
+  targetDimOpacity = 0;
+  lastHoveredWordIndex = -1;
+}
+
 
 window.addEventListener('resize', () => {
   camera.aspect = window.innerWidth / window.innerHeight;
@@ -825,7 +950,8 @@ function animate() {
   overlayMaterial.opacity = dimOpacity;
 
   // 仅在悬停单词索引真正改变时重绘覆盖层（性能优化）
-  if (hoveredWordIndex !== lastHoveredWordIndex) {
+  // 搜索状态时跳过悬停重绘逻辑
+  if (!isSearching && hoveredWordIndex !== lastHoveredWordIndex) {
     overlayCtx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
     
     if (hoveredWordIndex >= 0) {
