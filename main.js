@@ -199,7 +199,7 @@ quotePanel.style.overflow = 'hidden'; // 隐藏溢出内容
 document.body.appendChild(quotePanel);
 
 // 创建随机位置的诗句元素（带淡入淡出效果）
-function displayQuoteAtRandomPosition(text) {
+function displayQuoteAtRandomPosition(text, zhOverride) {
   // 淡出旧内容
   const oldElements = quotePanel.querySelectorAll('.quote-text');
   oldElements.forEach(el => {
@@ -234,7 +234,9 @@ function displayQuoteAtRandomPosition(text) {
   chineseElement.style.color = '#999999';
   chineseElement.style.textAlign = 'left';
   chineseElement.style.lineHeight = '1.5';
-  const translation = translationMap[text] || '';
+  const translation = (typeof zhOverride === 'string' && zhOverride)
+    ? zhOverride
+    : (translationMap[text] || '');
   chineseElement.textContent = translation;
   
   quoteContainer.appendChild(englishElement);
@@ -265,19 +267,42 @@ function displayQuoteAtRandomPosition(text) {
 function normalizeTokens(s) {
   return s.toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim().split(/\s+/).filter(Boolean);
 }
-function findSentenceForWord(word) {
+function findIndexForWord(word) {
   const target = word.toLowerCase();
   for (let i = 0; i < poemLines.length; i++) {
     const tokens = normalizeTokens(poemLines[i]);
-    if (tokens.includes(target)) {
-      return poemLines[i];
-    }
+    if (tokens.includes(target)) return i;
   }
-  // 未找到则返回包含该单词的第一行（宽松匹配）
   for (let i = 0; i < poemLines.length; i++) {
-    if (poemLines[i].toLowerCase().indexOf(target) !== -1) return poemLines[i];
+    if (poemLines[i].toLowerCase().indexOf(target) !== -1) return i;
   }
-  return word;
+  return -1;
+}
+
+// 从起始行向前拼接完整句子，直到遇到以 ';' 或 '.' 结尾的行
+function assembleSentenceFromIndex(startIdx) {
+  if (startIdx < 0 || startIdx >= poemLines.length) {
+    return { en: '', zh: '' };
+  }
+  const enParts = [];
+  const zhParts = [];
+  for (let j = startIdx; j < poemLines.length; j++) {
+    const line = poemLines[j];
+    enParts.push(line);
+    if (translationMap[line]) zhParts.push(translationMap[line]);
+    if (/[.;]\s*$/.test(line)) break;
+  }
+  const enSentence = enParts.join(' ');
+  const zhSentence = zhParts.length ? zhParts.join(' ') : '';
+  return { en: enSentence, zh: zhSentence };
+}
+
+function findExtendedSentenceForWord(word) {
+  const idx = findIndexForWord(word);
+  if (idx === -1) {
+    return { en: word, zh: '' };
+  }
+  return assembleSentenceFromIndex(idx);
 }
 
 const poemText = `Leaning into the afternoons I cast my sad nets towards your oceanic eyes.
@@ -638,8 +663,8 @@ renderer.domElement.addEventListener('click', (e) => {
       }
     }
     if (foundWord) {
-      const sentence = findSentenceForWord(foundWord);
-      displayQuoteAtRandomPosition(sentence);
+      const ext = findExtendedSentenceForWord(foundWord);
+      displayQuoteAtRandomPosition(ext.en, ext.zh);
     }
   }
 });
