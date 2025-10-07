@@ -267,6 +267,8 @@ function displayQuoteAtRandomPosition(text, zhOverride) {
 function normalizeTokens(s) {
   return s.toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim().split(/\s+/).filter(Boolean);
 }
+// 断句终止符：英语/中文的句号、分号、问号、感叹号
+const END_PUNCT = /[.;?!？！。]\s*$/;
 function findIndexForWord(word) {
   const target = word.toLowerCase();
   for (let i = 0; i < poemLines.length; i++) {
@@ -290,13 +292,13 @@ function assembleSentenceFromIndex(startIdx) {
     const line = poemLines[j];
     enParts.push(line);
     // 行级翻译优先：精确匹配或去掉末尾标点再匹配
-    const trimmedEnd = line.replace(/[.;]\s*$/, '');
+    const trimmedEnd = line.replace(END_PUNCT, '');
     if (translationMap[line]) {
       zhParts.push(translationMap[line]);
     } else if (translationMap[trimmedEnd]) {
       zhParts.push(translationMap[trimmedEnd]);
     }
-    if (/[.;]\s*$/.test(line)) break;
+    if (END_PUNCT.test(line)) break;
   }
   const enSentence = enParts.join(' ');
   // 句级翻译次之：整句匹配（含与不含末尾标点）
@@ -305,7 +307,7 @@ function assembleSentenceFromIndex(startIdx) {
     zhSentence = zhParts.join(' ');
   } else {
     const enTrimmed = enSentence.trim();
-    const enNoEnd = enTrimmed.replace(/[.;]\s*$/, '');
+    const enNoEnd = enTrimmed.replace(END_PUNCT, '');
     if (translationMap[enTrimmed]) zhSentence = translationMap[enTrimmed];
     else if (translationMap[enNoEnd]) zhSentence = translationMap[enNoEnd];
   }
@@ -1079,11 +1081,17 @@ function appendPoemsToSource(remoteData) {
     
     // 处理翻译映射
     if (p.translations && typeof p.translations === 'object') {
-      Object.keys(p.translations).forEach(en => {
-        const zh = p.translations[en];
-        if (typeof en === 'string' && typeof zh === 'string' && en.trim()) {
-          translationMap[en] = zh;
-          console.log(`Added translation: "${en.substring(0, 30)}..." -> "${zh.substring(0, 30)}..."`);
+      Object.keys(p.translations).forEach(enRaw => {
+        const zh = p.translations[enRaw];
+        if (typeof enRaw === 'string' && typeof zh === 'string' && enRaw.trim()) {
+          const enTrim = enRaw.trim();
+          const enNoEnd = enTrim.replace(/[.;]\s*$/, '');
+          const enNorm = enNoEnd.replace(/\s+/g, ' ');
+          // 存入多种规范化键，提升点击/拼句后的匹配成功率
+          translationMap[enTrim] = zh;
+          translationMap[enNoEnd] = zh;
+          translationMap[enNorm] = zh;
+          console.log(`Added translation: "${enTrim.substring(0, 40)}" -> "${zh.substring(0, 40)}"`);
         }
       });
     }
