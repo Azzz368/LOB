@@ -1039,16 +1039,19 @@ function appendPoemsToSource(remoteData) {
   if (addedLines.length > 0) {
     console.log(`Adding ${addedLines.length} new lines to poem text`);
     
-    // 更新 poemSource（完整的诗句库）
+    // 组装新增文本块
     const tail = addedLines.join('\n');
-    const sep = poemSource.endsWith('\n') ? '' : '\n';
-    poemSource += `${sep}${tail}`;
     
-    // 更新 currentPoemText 并重建纹理
-    const prefix = (currentPoemText && !currentPoemText.endsWith('\n')) ? '\n' : '';
-    updatePoemText(`${prefix}${tail}`);
+    // 合并策略改为“前置到开头”：让新增诗句优先出现在转筒上部分
+    // 1) 更新 poemSource（完整库，前置）
+    const needsSepBefore = tail && !tail.endsWith('\n');
+    const sepBetween = poemSource.startsWith('\n') || !poemSource ? '' : '\n';
+    poemSource = `${tail}${needsSepBefore ? '\n' : ''}${sepBetween}${poemSource}`;
     
-    console.log('Poem text updated. Total lines in poemLines:', poemLines.length);
+    // 2) 更新 currentPoemText（前置）并重建纹理
+    prependPoemText(tail);
+    
+    console.log('Poem text updated (prepended). Total lines in poemLines:', poemLines.length);
     console.log('Total translations:', Object.keys(translationMap).length);
   } else {
     console.warn('No lines added from remote data');
@@ -1067,6 +1070,16 @@ function updatePoemText(extraText) {
 }
 
 let currentPoemText = null;
+
+// 前置文本并重建纹理（让新增内容优先出现）
+function prependPoemText(extraText) {
+  if (extraText && typeof extraText === 'string') {
+    const needsSepAfter = extraText && !extraText.endsWith('\n');
+    const sepBetween = (currentPoemText && !currentPoemText.startsWith('\n')) ? '\n' : '';
+    currentPoemText = `${extraText}${needsSepAfter ? '\n' : ''}${sepBetween}${currentPoemText || ''}`;
+  }
+  rebuildTextTextureAndMapping();
+}
 
 function rebuildTextTextureAndMapping() {
   // 重绘主文本画布并重建wordBoxes
