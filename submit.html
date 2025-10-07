@@ -352,8 +352,18 @@
       </div>
       
       <div class="form-group">
-        <label for="lines">
+        <label for="source">
           <span class="form-number">03</span>
+          Source-来源
+          <span class="required">*</span>
+        </label>
+        <input type="text" id="source" name="source" placeholder="e.g., Twenty Love Poems and a Song of Despair" required>
+        <p class="hint">Book title, collection, or origin of the poem</p>
+      </div>
+      
+      <div class="form-group">
+        <label for="lines">
+          <span class="form-number">04</span>
           Poem Content-内容
           <span class="required">*</span>
         </label>
@@ -363,7 +373,7 @@
       
       <div class="translation-section" id="translationSection" style="display: none;">
         <h3>
-          <span class="form-number">04</span>
+          <span class="form-number">05</span>
           Translation Pairs (Optional)-对照翻译（可选）
         </h3>
         <div id="translationsContainer">
@@ -378,7 +388,7 @@
       
       <div class="form-group">
         <label for="submitterName">
-          <span class="form-number" id="nameNumber">04</span>
+          <span class="form-number" id="nameNumber">06</span>
           Your Name (Optional)-您的网名（可选）
         </label>
         <input type="text" id="submitterName" name="submitterName" placeholder="Leave your name">
@@ -386,7 +396,7 @@
       
       <div class="form-group">
         <label for="submitterEmail">
-          <span class="form-number" id="emailNumber">05</span>
+          <span class="form-number" id="emailNumber">07</span>
           Contact Email (Optional)-邮箱（可选）
         </label>
         <input type="email" id="submitterEmail" name="submitterEmail" placeholder="your@email.com">
@@ -405,8 +415,8 @@
       const translationSection = document.getElementById('translationSection');
       const isVisible = translationSection.style.display !== 'none';
       
-      document.getElementById('nameNumber').textContent = isVisible ? '05' : '04';
-      document.getElementById('emailNumber').textContent = isVisible ? '06' : '05';
+      document.getElementById('nameNumber').textContent = isVisible ? '06' : '05';
+      document.getElementById('emailNumber').textContent = isVisible ? '07' : '06';
     }
     
     // 语言选择
@@ -456,14 +466,15 @@
       try {
         // 收集表单数据
         const author = document.getElementById('author').value.trim();
+        const source = document.getElementById('source').value.trim();
         const linesText = document.getElementById('lines').value.trim();
         const lines = linesText.split('\n').map(l => l.trim()).filter(l => l.length > 0);
         const language = document.getElementById('language').value;
         const submitterName = document.getElementById('submitterName').value.trim();
         const submitterEmail = document.getElementById('submitterEmail').value.trim();
         
-        if (!author || lines.length === 0) {
-          throw new Error('Please fill in the author and poem content');
+        if (!author || !source || lines.length === 0) {
+          throw new Error('Please fill in the author, source, and poem content');
         }
         
         // 收集翻译对照
@@ -482,6 +493,7 @@
         // 构建提交数据
         const submission = {
           author,
+          source,
           lines,
           language,
           translations,

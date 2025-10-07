@@ -692,12 +692,67 @@ function addPanelLine(enText, zhText) {
   sidePanel.appendChild(line);
 }
 
+// 初始默认内容
 addPanelLine('Poems by Pablo Neruda——', '诗歌选自聂鲁达——');
 addPanelLine('VII Leaning into the afternoon', '七，倚身在暮色里');
 addPanelLine('XIII I have gone marking', '十三，我以火的十字');
 addPanelLine('XX A Song of Despair (excerpt)', '二十，一首绝望的歌（节选）');
 
 document.body.appendChild(sidePanel);
+
+// 更新左侧面板内容
+function updateSidePanel(poemsData) {
+  if (!poemsData || !poemsData.poems || poemsData.poems.length === 0) return;
+  
+  // 清空面板内容
+  sidePanel.innerHTML = '';
+  
+  // 添加标题
+  const title = document.createElement('div');
+  title.style.fontFamily = '"Sitka", serif';
+  title.style.fontSize = '11px';
+  title.style.color = '#999999';
+  title.style.letterSpacing = '0.08em';
+  title.style.textTransform = 'uppercase';
+  title.style.marginBottom = '24px';
+  title.style.borderBottom = '1px solid #eeeeee';
+  title.style.paddingBottom = '12px';
+  title.textContent = 'Poetry Sources';
+  sidePanel.appendChild(title);
+  
+  // 添加所有诗歌来源
+  poemsData.poems.forEach((poem, index) => {
+    // 跳过没有 source 字段的诗歌（旧数据）
+    if (!poem.source) {
+      // 兜底显示作者信息
+      if (poem.author) {
+        addPanelLine(`Poems by ${poem.author}`, `诗歌选自${poem.author}`);
+      }
+      return;
+    }
+    
+    // 显示作者和来源
+    const authorLine = `${poem.author || 'Unknown'}`;
+    const sourceLine = `${poem.source}`;
+    
+    addPanelLine(authorLine, sourceLine);
+  });
+  
+  // 添加更新时间
+  if (poemsData.updatedAt) {
+    const updateInfo = document.createElement('div');
+    updateInfo.style.fontFamily = '"Sitka", serif';
+    updateInfo.style.fontSize = '10px';
+    updateInfo.style.color = '#cccccc';
+    updateInfo.style.marginTop = '24px';
+    updateInfo.style.paddingTop = '12px';
+    updateInfo.style.borderTop = '1px solid #eeeeee';
+    updateInfo.style.textAlign = 'center';
+    const date = new Date(poemsData.updatedAt);
+    updateInfo.textContent = `Updated ${date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`;
+    sidePanel.appendChild(updateInfo);
+  }
+}
 
 // 左侧提示线（在面板露出的10px边缘）
 const hintLine = document.createElement('div');
@@ -909,6 +964,7 @@ function scheduleDailyRefresh() {
     if (remote && remote.poems) {
       console.log('Loaded poems:', remote.poems.length);
       appendPoemsToSource(remote);
+      updateSidePanel(remote); // 更新左侧面板
     } else {
       console.warn('No poems received from API');
     }
@@ -933,6 +989,7 @@ window.addEventListener('keydown', async (e) => {
           poemLines.push(line);
         });
         appendPoemsToSource(remote);
+        updateSidePanel(remote); // 更新左侧面板
       }
     }
   }

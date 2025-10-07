@@ -647,6 +647,7 @@
           </div>
           <div class="card-content">
             <div class="meta-line"><strong>Language:</strong> ${sub.language === 'en' ? 'English' : sub.language === 'zh' ? 'Chinese' : 'Bilingual'}</div>
+            ${sub.source ? `<div class="meta-line"><strong>Source:</strong> ${sub.source}</div>` : ''}
             <div class="lines">${sub.lines.join('\n')}</div>
             ${Object.keys(sub.translations || {}).length > 0 ? `
               <div class="translations">
