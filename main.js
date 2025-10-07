@@ -289,11 +289,26 @@ function assembleSentenceFromIndex(startIdx) {
   for (let j = startIdx; j < poemLines.length; j++) {
     const line = poemLines[j];
     enParts.push(line);
-    if (translationMap[line]) zhParts.push(translationMap[line]);
+    // 行级翻译优先：精确匹配或去掉末尾标点再匹配
+    const trimmedEnd = line.replace(/[.;]\s*$/, '');
+    if (translationMap[line]) {
+      zhParts.push(translationMap[line]);
+    } else if (translationMap[trimmedEnd]) {
+      zhParts.push(translationMap[trimmedEnd]);
+    }
     if (/[.;]\s*$/.test(line)) break;
   }
   const enSentence = enParts.join(' ');
-  const zhSentence = zhParts.length ? zhParts.join(' ') : '';
+  // 句级翻译次之：整句匹配（含与不含末尾标点）
+  let zhSentence = '';
+  if (zhParts.length) {
+    zhSentence = zhParts.join(' ');
+  } else {
+    const enTrimmed = enSentence.trim();
+    const enNoEnd = enTrimmed.replace(/[.;]\s*$/, '');
+    if (translationMap[enTrimmed]) zhSentence = translationMap[enTrimmed];
+    else if (translationMap[enNoEnd]) zhSentence = translationMap[enNoEnd];
+  }
   return { en: enSentence, zh: zhSentence };
 }
 
@@ -664,6 +679,7 @@ renderer.domElement.addEventListener('click', (e) => {
     }
     if (foundWord) {
       const ext = findExtendedSentenceForWord(foundWord);
+      console.log('[Click sentence]', { en: ext.en, zh: ext.zh });
       displayQuoteAtRandomPosition(ext.en, ext.zh);
     }
   }
@@ -1036,9 +1052,21 @@ function appendPoemsToSource(remoteData) {
     
     // 处理诗句
     if (Array.isArray(p.lines)) {
-      p.lines.forEach(line => {
-        if (typeof line === 'string' && line.trim()) {
-          const trimmedLine = line.trim();
+      p.lines.forEach(rawLine => {
+        if (typeof rawLine === 'string' && rawLine.trim()) {
+          let line = rawLine.trim();
+          // 兼容行内“原句 → 中文”提交格式，自动拆分为翻译映射
+          // 同时保留左侧原句进入贴图/匹配
+          const arrowMatch = line.split(/\s*[→=>-]+\s*/);
+          if (arrowMatch.length === 2) {
+            const left = arrowMatch[0].trim();
+            const right = arrowMatch[1].trim();
+            if (left && right) {
+              translationMap[left] = right;
+              line = left; // 仅把左侧原句进入文本
+            }
+          }
+          const trimmedLine = line;
           addedLines.push(trimmedLine);
           
           // 同时更新 poemLines（用于点击匹配）
