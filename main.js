@@ -1001,30 +1001,57 @@ async function fetchRemotePoems() {
 
 function appendPoemsToSource(remoteData) {
   if (!remoteData || !remoteData.poems) return;
+  
+  console.log('Appending poems to source:', remoteData.poems.length);
+  
   const addedLines = [];
-  remoteData.poems.forEach(p => {
+  
+  remoteData.poems.forEach((p, index) => {
+    console.log(`Processing poem ${index + 1}:`, p.author, `(${p.lines?.length || 0} lines)`);
+    
+    // 处理诗句
     if (Array.isArray(p.lines)) {
       p.lines.forEach(line => {
         if (typeof line === 'string' && line.trim()) {
-          addedLines.push(line.trim());
+          const trimmedLine = line.trim();
+          addedLines.push(trimmedLine);
+          
+          // 同时更新 poemLines（用于点击匹配）
+          if (!poemLines.includes(trimmedLine)) {
+            poemLines.push(trimmedLine);
+          }
         }
       });
     }
+    
+    // 处理翻译映射
     if (p.translations && typeof p.translations === 'object') {
       Object.keys(p.translations).forEach(en => {
         const zh = p.translations[en];
         if (typeof en === 'string' && typeof zh === 'string' && en.trim()) {
           translationMap[en] = zh;
+          console.log(`Added translation: "${en.substring(0, 30)}..." -> "${zh.substring(0, 30)}..."`);
         }
       });
     }
   });
-  if (addedLines.length) {
+  
+  if (addedLines.length > 0) {
+    console.log(`Adding ${addedLines.length} new lines to poem text`);
+    
+    // 更新 poemSource（完整的诗句库）
     const tail = addedLines.join('\n');
-    // 更新句子库以便点击匹配
-    addedLines.forEach(line => { poemLines.push(line); });
+    const sep = poemSource.endsWith('\n') ? '' : '\n';
+    poemSource += `${sep}${tail}`;
+    
+    // 更新 currentPoemText 并重建纹理
     const prefix = (currentPoemText && !currentPoemText.endsWith('\n')) ? '\n' : '';
     updatePoemText(`${prefix}${tail}`);
+    
+    console.log('Poem text updated. Total lines in poemLines:', poemLines.length);
+    console.log('Total translations:', Object.keys(translationMap).length);
+  } else {
+    console.warn('No lines added from remote data');
   }
 }
 
@@ -1103,19 +1130,40 @@ function scheduleDailyRefresh() {
 // 添加手动刷新功能（按 R 键刷新诗歌）
 window.addEventListener('keydown', async (e) => {
   if (e.key === 'r' || e.key === 'R') {
-    console.log('Manual refresh triggered');
+    console.log('=== Manual refresh triggered ===');
     if (REMOTE_ENDPOINT) {
       const remote = await fetchRemotePoems();
       if (remote && remote.poems) {
-        console.log('Refreshed poems:', remote.poems.length);
-        // 清空当前文本，重新加载
+        console.log('Refreshed poems from API:', remote.poems.length);
+        
+        // 完全重置所有数据结构
+        console.log('Resetting all data structures...');
+        
+        // 1. 重置 currentPoemText 为初始内容
         currentPoemText = poemText;
+        
+        // 2. 重置 poemLines（用于点击匹配）
         poemLines.length = 0;
-        poemSource.split('\n').filter(l => l.trim().length > 0).forEach(line => {
-          poemLines.push(line);
+        poemText.split('\n').filter(l => l.trim().length > 0).forEach(line => {
+          poemLines.push(line.trim());
         });
+        
+        // 3. 重置 poemSource（完整诗句库）
+        poemSource = poemText;
+        
+        // 4. 重置 translationMap（保留初始翻译）
+        // translationMap 已经在顶部定义，包含初始翻译
+        
+        // 5. 追加远程数据
         appendPoemsToSource(remote);
-        updateSidePanel(remote); // 更新左侧面板
+        
+        // 6. 更新左侧面板
+        updateSidePanel(remote);
+        
+        console.log('=== Refresh complete ===');
+        console.log('Total lines in currentPoemText:', currentPoemText.split('\n').length);
+        console.log('Total lines in poemLines:', poemLines.length);
+        console.log('Total translations:', Object.keys(translationMap).length);
       }
     }
   }
