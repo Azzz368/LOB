@@ -137,6 +137,8 @@ The birds peck at the first stars that flash like my soul when I love you.
 
 The night on its shadowy mare shedding blue tassels over the land.`;
 let poemLines = poemSource.split('\n').filter(l => l.trim().length > 0);
+// 与 poemLines 对齐的分组ID（初始为 base）用于断句边界（同一提交/发布时间作为一组）
+let lineGroups = new Array(poemLines.length).fill('base');
 
 // 中文翻译映射
 const translationMap = {
@@ -286,9 +288,11 @@ function assembleSentenceFromIndex(startIdx) {
   if (startIdx < 0 || startIdx >= poemLines.length) {
     return { en: '', zh: '' };
   }
+  const groupId = lineGroups[startIdx];
   const enParts = [];
   const zhParts = [];
   for (let j = startIdx; j < poemLines.length; j++) {
+    if (lineGroups[j] !== groupId) break; // 组边界，不与下一次提交混拼
     const line = poemLines[j];
     enParts.push(line);
     // 行级翻译优先：精确匹配或去掉末尾标点再匹配
@@ -769,21 +773,28 @@ function updateSidePanel(poemsData) {
   title.textContent = 'Poetry Sources';
   sidePanel.appendChild(title);
   
-  // 添加所有诗歌来源
+  // 去重：如果作者重复，仅保留第一条
+  const seenAuthors = new Set();
   poemsData.poems.forEach((poem, index) => {
     // 跳过没有 source 字段的诗歌（旧数据）
     if (!poem.source) {
       // 兜底显示作者信息
       if (poem.author) {
-        addPanelLine(`Poems by ${poem.author}`, `诗歌选自${poem.author}`);
+        if (!seenAuthors.has(poem.author)) {
+          addPanelLine(`Poems by ${poem.author}`, '');
+          seenAuthors.add(poem.author);
+        }
       }
       return;
     }
     
     // 显示格式：Poems by "author"—"source"
-    const displayLine = `Poems by ${poem.author || 'Unknown'}—${poem.source}`;
-    
-    addPanelLine(displayLine, '');
+    const authorName = poem.author || 'Unknown';
+    if (!seenAuthors.has(authorName)) {
+      const displayLine = `Poems by ${authorName}—${poem.source}`;
+      addPanelLine(displayLine, '');
+      seenAuthors.add(authorName);
+    }
   });
   
   // 添加更新时间
@@ -1054,6 +1065,7 @@ function appendPoemsToSource(remoteData) {
     console.log(`Processing poem ${index + 1}:`, p.author, `(${p.lines?.length || 0} lines)`);
     
     // 处理诗句
+    const groupId = p.publishedAt || p.submittedAt || `grp_${Date.now()}_${index}`;
     if (Array.isArray(p.lines)) {
       p.lines.forEach(rawLine => {
         if (typeof rawLine === 'string' && rawLine.trim()) {
@@ -1075,6 +1087,7 @@ function appendPoemsToSource(remoteData) {
           // 同时更新 poemLines（用于点击匹配）
           if (!poemLines.includes(trimmedLine)) {
             poemLines.push(trimmedLine);
+            lineGroups.push(groupId);
           }
         }
       });
