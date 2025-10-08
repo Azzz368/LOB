@@ -3,5 +3,5 @@
 📝 LICENSE
 
 MIT License
-**在线演示**: https://libraryofbable.netlify.app  
-**用户投稿**: https://libraryofbable.netlify.app/submit.html  
+**主视觉入口**: https://libraryofbable.netlify.app  
+**投稿入口**: https://libraryofbable.netlify.app/submit.html  
