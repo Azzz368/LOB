@@ -674,9 +674,9 @@
               <button class="btn btn-reject" onclick="rejectPoem('${sub.id}')">Reject</button>
             ` : ''}
             ${sub.status === 'approved' ? `
-              ${sub.published && sub.published.exists && !sub.published.hidden ? `<button class=\"btn btn-reject\" onclick=\"hidePoem('${sub.id}')\">Unpublish</button>` : ''}
-              ${sub.published && sub.published.exists && sub.published.hidden ? `<button class=\"btn btn-approve\" onclick=\"showPoem('${sub.id}')\">Show</button>` : ''}
-              ${sub.published && sub.published.exists ? `<button class=\"btn btn-reject\" onclick=\"deletePoem('${sub.id}')\">Delete</button>` : ''}
+              ${sub.published && sub.published.exists && !sub.published.hidden ? '<button class="btn btn-reject" onclick="hidePoem(\'' + sub.id + '\')">Unpublish</button>' : ''}
+              ${sub.published && sub.published.exists && sub.published.hidden ? '<button class="btn btn-approve" onclick="showPoem(\'' + sub.id + '\')">Show</button>' : ''}
+              ${sub.published && sub.published.exists ? '<button class="btn btn-reject" onclick="deletePoem(\'' + sub.id + '\')">Delete</button>' : ''}
             ` : ''}
           </div>
         </div>

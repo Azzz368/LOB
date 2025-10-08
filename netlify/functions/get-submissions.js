@@ -41,7 +41,14 @@ export default async (req, context) => {
     
     // 为每个 submission 附加发布状态（如果存在）
     const enriched = submissions.map(s => {
-      const pub = submissionIdToPoem.get(s.id);
+      let pub = submissionIdToPoem.get(s.id);
+      // 回退匹配：按 author + lines 完整相等匹配
+      if (!pub && s && s.status === 'approved' && Array.isArray(s.lines)) {
+        const matchIdx = poems.findIndex(p => p && p.author === s.author && Array.isArray(p.lines) && p.lines.length === s.lines.length && p.lines.every((ln, i) => ln === s.lines[i]));
+        if (matchIdx !== -1) {
+          pub = { index: matchIdx, hidden: !!poems[matchIdx].hidden };
+        }
+      }
       return {
         ...s,
         published: pub ? { exists: true, hidden: pub.hidden } : { exists: false, hidden: false }
