@@ -22,7 +22,7 @@ export default async (req, context) => {
   try {
     const { submissionId, action } = await req.json();
     
-    if (!submissionId || !action || !['approve', 'reject'].includes(action)) {
+    if (!submissionId || !action || !['approve', 'reject', 'hide', 'show', 'delete'].includes(action)) {
       return new Response('Invalid parameters', { status: 400 });
     }
     
@@ -55,6 +55,7 @@ export default async (req, context) => {
       // 添加到已发布列表
       const newPoem = {
         author: submission.author,
+        submissionId: submission.id,
         lines: submission.lines,
         translations: submission.translations || {},
         language: submission.language || 'en',
@@ -92,6 +93,25 @@ export default async (req, context) => {
         success: true,
         message: 'Poem rejected'
       }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    } else if (action === 'hide' || action === 'show' || action === 'delete') {
+      // 修改已发布内容可见性或删除
+      let poems = await store.get("poems", { type: "json" }) || { poems: [], updatedAt: new Date().toISOString() };
+      poems.poems = Array.isArray(poems.poems) ? poems.poems : [];
+      const idx = poems.poems.findIndex(p => p.submissionId === submissionId);
+      if (idx === -1) return new Response('Published poem not found', { status: 404 });
+
+      if (action === 'delete') {
+        poems.poems.splice(idx, 1);
+      } else {
+        poems.poems[idx].hidden = (action === 'hide');
+      }
+      poems.updatedAt = new Date().toISOString();
+      await store.setJSON("poems", poems);
+
+      return new Response(JSON.stringify({ success: true, message: `Poem ${action}d` }), {
         status: 200,
         headers: { 'Content-Type': 'application/json' }
       });

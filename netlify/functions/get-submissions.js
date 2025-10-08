@@ -24,14 +24,32 @@ export default async (req, context) => {
     
     // 获取所有提交
     const submissions = await store.get("submissions", { type: "json" }) || [];
+    // 获取已发布诗歌，用于映射 hidden/存在 等状态
+    const poemsData = await store.get("poems", { type: "json" }) || { poems: [] };
+    const poems = Array.isArray(poemsData.poems) ? poemsData.poems : [];
+    const submissionIdToPoem = new Map();
+    poems.forEach((poem, idx) => {
+      if (poem && poem.submissionId) {
+        submissionIdToPoem.set(poem.submissionId, { index: idx, hidden: !!poem.hidden });
+      }
+    });
     
     // 按状态分类
     const pending = submissions.filter(s => s.status === 'pending');
     const approved = submissions.filter(s => s.status === 'approved');
     const rejected = submissions.filter(s => s.status === 'rejected');
     
+    // 为每个 submission 附加发布状态（如果存在）
+    const enriched = submissions.map(s => {
+      const pub = submissionIdToPoem.get(s.id);
+      return {
+        ...s,
+        published: pub ? { exists: true, hidden: pub.hidden } : { exists: false, hidden: false }
+      };
+    });
+
     return new Response(JSON.stringify({
-      submissions,
+      submissions: enriched,
       stats: {
         total: submissions.length,
         pending: pending.length,

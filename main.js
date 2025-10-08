@@ -1050,6 +1050,7 @@ function appendPoemsToSource(remoteData) {
   const addedLines = [];
   
   remoteData.poems.forEach((p, index) => {
+    if (p && p.hidden) return; // 跳过被隐藏的已发布诗歌
     console.log(`Processing poem ${index + 1}:`, p.author, `(${p.lines?.length || 0} lines)`);
     
     // 处理诗句

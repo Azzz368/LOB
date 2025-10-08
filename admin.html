@@ -668,12 +668,17 @@
               })}
             </div>
           </div>
-          ${sub.status === 'pending' ? `
-            <div class="card-actions">
+          <div class="card-actions">
+            ${sub.status === 'pending' ? `
               <button class="btn btn-approve" onclick="approvePoem('${sub.id}')">Approve</button>
               <button class="btn btn-reject" onclick="rejectPoem('${sub.id}')">Reject</button>
-            </div>
-          ` : ''}
+            ` : ''}
+            ${sub.status === 'approved' ? `
+              ${sub.published && sub.published.exists && !sub.published.hidden ? `<button class=\"btn btn-reject\" onclick=\"hidePoem('${sub.id}')\">Unpublish</button>` : ''}
+              ${sub.published && sub.published.exists && sub.published.hidden ? `<button class=\"btn btn-approve\" onclick=\"showPoem('${sub.id}')\">Show</button>` : ''}
+              ${sub.published && sub.published.exists ? `<button class=\"btn btn-reject\" onclick=\"deletePoem('${sub.id}')\">Delete</button>` : ''}
+            ` : ''}
+          </div>
         </div>
       `).join('');
     }
@@ -725,6 +730,42 @@
         showMessage('message', 'Poem rejected', 'success');
         await loadSubmissions();
         
+      } catch (e) {
+        showMessage('message', `Error: ${e.message}`, 'error');
+      }
+    }
+
+    // Unpublish (hide)
+    async function hidePoem(submissionId) {
+      if (!confirm('Unpublish this poem?')) return;
+      await mutatePublished(submissionId, 'hide');
+    }
+
+    // Publish (show)
+    async function showPoem(submissionId) {
+      if (!confirm('Publish (show) this poem again?')) return;
+      await mutatePublished(submissionId, 'show');
+    }
+
+    // Delete published poem
+    async function deletePoem(submissionId) {
+      if (!confirm('Delete this published poem? This cannot be undone.')) return;
+      await mutatePublished(submissionId, 'delete');
+    }
+
+    async function mutatePublished(submissionId, action) {
+      try {
+        const res = await fetch('/.netlify/functions/approve-poem', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${authToken}`
+          },
+          body: JSON.stringify({ submissionId, action })
+        });
+        if (!res.ok) throw new Error(await res.text());
+        showMessage('message', `Success: ${action}`, 'success');
+        await loadSubmissions();
       } catch (e) {
         showMessage('message', `Error: ${e.message}`, 'error');
       }
