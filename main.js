@@ -303,6 +303,9 @@ function assembleSentenceFromIndex(startIdx) {
       zhParts.push(translationMap[trimmedEnd]);
     }
     if (END_PUNCT.test(line)) break;
+    
+    // 如果当前是组内最后一行（下一行不存在或属于其他组），也停止
+    if (j === poemLines.length - 1 || lineGroups[j + 1] !== groupId) break;
   }
   const enSentence = enParts.join(' ');
   // 句级翻译次之：整句匹配（含与不含末尾标点）
@@ -406,9 +409,9 @@ function createTextCanvas(text) {
   baseFontSize = 256;
   baseLineHeight = Math.floor(baseFontSize * 1.0);
   
-  // 透明背景，黑色Sitka字体
+  // 透明背景，黑色字体（支持日文）
   context.fillStyle = 'black';
-  context.font = `${baseFontSize}px "Sitka", serif`;
+  context.font = `${baseFontSize}px "Sitka", "Noto Serif JP", "Yu Mincho", "Hiragino Mincho ProN", serif`;
   context.textAlign = 'left';
   context.textBaseline = 'top';
   
@@ -420,7 +423,10 @@ function createTextCanvas(text) {
   
   // 连续排版填充（记录所有单词位置）
   wordBoxes = [];
-  const words = text.split(/\s+/).filter(w => w.length > 0);
+  
+  // CJK 文本预处理：在 CJK 字符（日文平假名/片假名/汉字）后插入空格，帮助分词和换行
+  const cjkProcessed = text.replace(/([\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff])/g, '$1 ');
+  const words = cjkProcessed.split(/\s+/).filter(w => w.length > 0);
   let wordIndex = 0;
   
   // 从负一行开始，到超出一行结束，确保垂直无缝
@@ -949,7 +955,7 @@ function applySearchHighlight(keyword) {
   
   const scale = 0.5;
   overlayCtx.fillStyle = '#FAFAFA';
-  overlayCtx.font = `${baseFontSize * scale}px "Sitka", serif`;
+  overlayCtx.font = `${baseFontSize * scale}px "Sitka", "Noto Serif JP", "Yu Mincho", "Hiragino Mincho ProN", serif`;
   overlayCtx.textAlign = 'left';
   overlayCtx.textBaseline = 'top';
   
@@ -1012,7 +1018,7 @@ function animate() {
       // 绘制所有非悬停单词为浅灰色（分辨率缩放）
       const scale = 0.5; // 覆盖层分辨率比例
       overlayCtx.fillStyle = '#FAFAFA'; // 更浅的灰色，不那么明显
-      overlayCtx.font = `${baseFontSize * scale}px "Sitka", serif`;
+      overlayCtx.font = `${baseFontSize * scale}px "Sitka", "Noto Serif JP", "Yu Mincho", "Hiragino Mincho ProN", serif`;
       overlayCtx.textAlign = 'left';
       overlayCtx.textBaseline = 'top';
       
