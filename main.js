@@ -406,9 +406,10 @@ function createTextCanvas(text) {
   baseFontSize = 256;
   baseLineHeight = Math.floor(baseFontSize * 1.0);
   
-  // 透明背景，黑色Sitka字体
+  // 透明背景，黑色字体（加入日文字体回退栈）
+  const CANVAS_FONT_STACK = '"Sitka", "Noto Serif JP", "Yu Mincho", "Hiragino Mincho ProN", "Meiryo", serif';
   context.fillStyle = 'black';
-  context.font = `${baseFontSize}px "Sitka", serif`;
+  context.font = `${baseFontSize}px ${CANVAS_FONT_STACK}`;
   context.textAlign = 'left';
   context.textBaseline = 'top';
   
@@ -420,7 +421,12 @@ function createTextCanvas(text) {
   
   // 连续排版填充（记录所有单词位置）
   wordBoxes = [];
-  const words = text.split(/\s+/).filter(w => w.length > 0);
+  // 为 CJK 文本增加字符级切分，避免超长单词溢出：
+  // 将日文/汉字字符之间插入空格，提升换行与命中率
+  const cjkSpaced = text
+    .replace(/[\u3040-\u30ff\u3400-\u9fff]/g, '$& ') // Hiragana/Katakana/CJK Unified
+    .replace(/\s+/g, ' ');
+  const words = cjkSpaced.split(/\s+/).filter(w => w.length > 0);
   let wordIndex = 0;
   
   // 从负一行开始，到超出一行结束，确保垂直无缝
