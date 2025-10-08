@@ -1,6 +1,4 @@
 import * as THREE from 'three';
-// 全局字体回退栈，支持日文显示
-const CANVAS_FONT_STACK = '"Sitka", "Noto Serif JP", "Yu Mincho", "Hiragino Mincho ProN", "Meiryo", serif';
 
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0xffffff);
@@ -408,10 +406,9 @@ function createTextCanvas(text) {
   baseFontSize = 256;
   baseLineHeight = Math.floor(baseFontSize * 1.0);
   
-  // 透明背景，黑色字体（加入日文字体回退栈）
-  const CANVAS_FONT_STACK = '"Sitka", "Noto Serif JP", "Yu Mincho", "Hiragino Mincho ProN", "Meiryo", serif';
+  // 透明背景，黑色Sitka字体
   context.fillStyle = 'black';
-  context.font = `${baseFontSize}px ${CANVAS_FONT_STACK}`;
+  context.font = `${baseFontSize}px "Sitka", serif`;
   context.textAlign = 'left';
   context.textBaseline = 'top';
   
@@ -423,11 +420,7 @@ function createTextCanvas(text) {
   
   // 连续排版填充（记录所有单词位置）
   wordBoxes = [];
-  // 为 CJK 文本增加字符级切分，避免超长单词溢出：
-  // 将日文/汉字字符之间插入空格，提升换行与命中率
-  // 对 CJK 文本采用“按字符绘制”，避免依赖空格。非 CJK 仍按词绘制。
-  const isCJK = /[\u3040-\u30ff\u3400-\u9fff]/.test(text);
-  const words = isCJK ? text.split('') : text.split(/\s+/).filter(w => w.length > 0);
+  const words = text.split(/\s+/).filter(w => w.length > 0);
   let wordIndex = 0;
   
   // 从负一行开始，到超出一行结束，确保垂直无缝
@@ -477,7 +470,7 @@ function createTextCanvas(text) {
           text: w
         });
       }
-      cursorX += wordWidth + (isCJK ? 0 : spaceWidth);
+      cursorX += wordWidth + spaceWidth;
     }
   }
   
@@ -1018,10 +1011,8 @@ function animate() {
     if (hoveredWordIndex >= 0) {
       // 绘制所有非悬停单词为浅灰色（分辨率缩放）
       const scale = 0.5; // 覆盖层分辨率比例
-  overlayCtx.fillStyle = '#FAFAFA'; // 更浅的灰色，不那么明显
-  overlayCtx.font = `${baseFontSize * scale}px ${CANVAS_FONT_STACK}`;
       overlayCtx.fillStyle = '#FAFAFA'; // 更浅的灰色，不那么明显
-      overlayCtx.font = `${baseFontSize * scale}px ${CANVAS_FONT_STACK}`;
+      overlayCtx.font = `${baseFontSize * scale}px "Sitka", serif`;
       overlayCtx.textAlign = 'left';
       overlayCtx.textBaseline = 'top';
       
