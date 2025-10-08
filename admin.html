@@ -642,7 +642,7 @@
           <div class="card-header">
             <h3>${sub.author || 'Unknown'}</h3>
             <span class="status-badge ${sub.status}">
-              ${sub.status === 'pending' ? 'Pending' : sub.status === 'approved' ? 'Approved' : 'Rejected'}
+              ${sub.status === 'pending' ? 'Pending' : sub.status === 'approved' ? (sub.published && sub.published.exists ? (sub.published.hidden ? 'Unpublished' : 'Published') : 'Approved') : 'Rejected'}
             </span>
           </div>
           <div class="card-content">

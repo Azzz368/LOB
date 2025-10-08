@@ -100,7 +100,15 @@ export default async (req, context) => {
       // 修改已发布内容可见性或删除
       let poems = await store.get("poems", { type: "json" }) || { poems: [], updatedAt: new Date().toISOString() };
       poems.poems = Array.isArray(poems.poems) ? poems.poems : [];
-      const idx = poems.poems.findIndex(p => p.submissionId === submissionId);
+      let idx = poems.poems.findIndex(p => p.submissionId === submissionId);
+      if (idx === -1) {
+        // 回退：根据 submission 的 author+lines 匹配（用于旧数据没有 submissionId 的情况）
+        const submissions = await store.get("submissions", { type: "json" }) || [];
+        const sub = submissions.find(s => s.id === submissionId);
+        if (sub) {
+          idx = poems.poems.findIndex(p => p && p.author === sub.author && Array.isArray(p.lines) && Array.isArray(sub.lines) && p.lines.length === sub.lines.length && p.lines.every((ln, i) => ln === sub.lines[i]));
+        }
+      }
       if (idx === -1) return new Response('Published poem not found', { status: 404 });
 
       if (action === 'delete') {
