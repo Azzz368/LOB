@@ -97,32 +97,83 @@ export default async (req, context) => {
         headers: { 'Content-Type': 'application/json' }
       });
     } else if (action === 'hide' || action === 'show' || action === 'delete') {
-      // 修改已发布内容可见性或删除
+      // 修改已发布内容可见性或删除（增强：删除时清理所有重复副本与提交记录）
       let poems = await store.get("poems", { type: "json" }) || { poems: [], updatedAt: new Date().toISOString() };
       poems.poems = Array.isArray(poems.poems) ? poems.poems : [];
-      let idx = poems.poems.findIndex(p => p.submissionId === submissionId);
+
+      // 定位主记录：优先 submissionId；否则回退 author+lines 完全匹配
+      let idx = poems.poems.findIndex(p => p && p.submissionId === submissionId);
+      let targetSignature = null;
       if (idx === -1) {
-        // 回退：根据 submission 的 author+lines 匹配（用于旧数据没有 submissionId 的情况）
-        const submissions = await store.get("submissions", { type: "json" }) || [];
-        const sub = submissions.find(s => s.id === submissionId);
+        const allSubs = await store.get("submissions", { type: "json" }) || [];
+        const sub = allSubs.find(s => s.id === submissionId);
         if (sub) {
-          idx = poems.poems.findIndex(p => p && p.author === sub.author && Array.isArray(p.lines) && Array.isArray(sub.lines) && p.lines.length === sub.lines.length && p.lines.every((ln, i) => ln === sub.lines[i]));
+          const norm = (arr) => (Array.isArray(arr) ? arr.join('\n').trim() : '');
+          const subSig = `${(sub.author || '').trim()}::${norm(sub.lines)}`;
+          targetSignature = subSig;
+          idx = poems.poems.findIndex(p => {
+            const pSig = `${(p.author || '').trim()}::${norm(p.lines)}`;
+            return pSig === subSig;
+          });
         }
+      } else {
+        // 基于已找到记录计算 signature，后续用于批量清理重复副本
+        const norm = (arr) => (Array.isArray(arr) ? arr.join('\n').trim() : '');
+        const p = poems.poems[idx];
+        targetSignature = `${(p.author || '').trim()}::${norm(p.lines)}`;
       }
-      if (idx === -1) return new Response('Published poem not found', { status: 404 });
+
+      if (idx === -1 && !targetSignature) {
+        return new Response('Published poem not found', { status: 404 });
+      }
 
       if (action === 'delete') {
-        poems.poems.splice(idx, 1);
-      } else {
-        poems.poems[idx].hidden = (action === 'hide');
-      }
-      poems.updatedAt = new Date().toISOString();
-      await store.setJSON("poems", poems);
+        // 1) 从已发布列表中删除所有与 targetSignature 匹配的重复副本
+        const beforeCount = poems.poems.length;
+        const norm = (arr) => (Array.isArray(arr) ? arr.join('\n').trim() : '');
+        poems.poems = poems.poems.filter(p => {
+          const pSig = `${(p.author || '').trim()}::${norm(p.lines)}`;
+          return pSig !== targetSignature;
+        });
+        const removedFromPoems = beforeCount - poems.poems.length;
 
-      return new Response(JSON.stringify({ success: true, message: `Poem ${action}d` }), {
-        status: 200,
-        headers: { 'Content-Type': 'application/json' }
-      });
+        // 2) 从提交列表中物理删除该 submission 及其完全重复副本（同 author+lines）
+        let subs = await store.get("submissions", { type: "json" }) || [];
+        const beforeSubs = subs.length;
+        subs = subs.filter(s => {
+          const subSig = `${(s.author || '').trim()}::${norm(s.lines)}`;
+          return !(s.id === submissionId || subSig === targetSignature);
+        });
+        const removedFromSubs = beforeSubs - subs.length;
+
+        // 3) 持久化变更
+        poems.updatedAt = new Date().toISOString();
+        await store.setJSON("poems", poems);
+        await store.setJSON("submissions", subs);
+
+        return new Response(JSON.stringify({
+          success: true,
+          message: 'Poem deleted and duplicates purged',
+          removedFromPoems,
+          removedFromSubs
+        }), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' }
+        });
+      } else {
+        // hide/show：仅切换可见性
+        if (idx === -1) {
+          return new Response('Published poem not found', { status: 404 });
+        }
+        poems.poems[idx].hidden = (action === 'hide');
+        poems.updatedAt = new Date().toISOString();
+        await store.setJSON("poems", poems);
+
+        return new Response(JSON.stringify({ success: true, message: `Poem ${action}d` }), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' }
+        });
+      }
     }
     
   } catch (e) {

@@ -135,8 +135,6 @@ Leaning into the afternoons I fling my sad nets to the sea that beats on your ma
 
 The birds peck at the first stars that flash like my soul when I love you.
 
-ひきつれて 涙は雪にふりぬれど 消ぬはそえずね鴛鴦の浮寝かな.
-
 The night on its shadowy mare shedding blue tassels over the land.`;
 let poemLines = poemSource.split('\n').filter(l => l.trim().length > 0);
 // 与 poemLines 对齐的分组ID（初始为 base）用于断句边界（同一提交/发布时间作为一组）
@@ -188,7 +186,6 @@ const translationMap = {
   "Leaning into the afternoons I fling my sad nets to the sea that beats on your marine eyes.": "倚身在暮色，在拍打你海洋般双眼的海上，我掷出我哀伤的网。",
   "The birds peck at the first stars that flash like my soul when I love you.": "夜晚的鸟群啄食第一阵群星，像爱著你的我的灵魂，闪烁著。",
   "The night on its shadowy mare shedding blue tassels over the land.": "夜在年阴郁的马上奔驰，在大地上撒下蓝色的穗须。",
-  "ひきつれて 涙は雪にふりぬれど 消ぬはそえずね鴛鴦の浮寝かな.": "久别的情缘，如飘雪般相聚。凄美如鸳鸯，相伴沉眠。"
 };
 
 // 左侧诗句面板（作为容器）
@@ -378,7 +375,6 @@ Oh to be able to celebrate you with all the words of joy.
 Sing,burn, flee,like abelfry at the hands of a madman.
 My sad tenderness,what comes over you all at once?
 When I have reached the most awesome and the coldest summitmy heart closes like a nocturnal flower.
-ひきつれて/涙は雪にふりぬれど/消ぬはそえずね鴛鴦の浮寝かな.
 `
 ;
 
@@ -1219,46 +1215,54 @@ function scheduleDailyRefresh() {
   }
 })();
 
+// 可复用：完整刷新流程（避免页面整页刷新）
+let refreshInProgress = false;
+async function fullRefreshFromRemote(triggerLabel) {
+  if (!REMOTE_ENDPOINT) return;
+  if (refreshInProgress) return;
+  refreshInProgress = true;
+  try {
+    console.log(`=== ${triggerLabel || 'Manual'} refresh triggered ===`);
+    const remote = await fetchRemotePoems();
+    if (remote && remote.poems) {
+      console.log('Refreshed poems from API:', remote.poems.length);
+      // 完全重置所有数据结构
+      console.log('Resetting all data structures...');
+      // 1. 重置 currentPoemText 为初始内容
+      currentPoemText = poemText;
+      // 2. 重置 poemLines（用于点击匹配）
+      poemLines.length = 0;
+      poemText.split('\n').filter(l => l.trim().length > 0).forEach(line => {
+        poemLines.push(line.trim());
+      });
+      // 3. 重置 poemSource（完整诗句库）
+      poemSource = poemText;
+      // 4. 重置 translationMap（保持初始翻译，远程追加覆盖）
+      // 初始 translationMap 已定义
+      // 5. 追加远程数据
+      appendPoemsToSource(remote);
+      // 6. 更新左侧面板
+      updateSidePanel(remote);
+      console.log('=== Refresh complete ===');
+      console.log('Total lines in currentPoemText:', currentPoemText.split('\n').length);
+      console.log('Total lines in poemLines:', poemLines.length);
+      console.log('Total translations:', Object.keys(translationMap).length);
+    }
+  } finally {
+    refreshInProgress = false;
+  }
+}
+
 // 添加手动刷新功能（按 R 键刷新诗歌）
 window.addEventListener('keydown', async (e) => {
   if (e.key === 'r' || e.key === 'R') {
-    console.log('=== Manual refresh triggered ===');
-    if (REMOTE_ENDPOINT) {
-      const remote = await fetchRemotePoems();
-      if (remote && remote.poems) {
-        console.log('Refreshed poems from API:', remote.poems.length);
-        
-        // 完全重置所有数据结构
-        console.log('Resetting all data structures...');
-        
-        // 1. 重置 currentPoemText 为初始内容
-        currentPoemText = poemText;
-        
-        // 2. 重置 poemLines（用于点击匹配）
-        poemLines.length = 0;
-        poemText.split('\n').filter(l => l.trim().length > 0).forEach(line => {
-          poemLines.push(line.trim());
-        });
-        
-        // 3. 重置 poemSource（完整诗句库）
-        poemSource = poemText;
-        
-        // 4. 重置 translationMap（保留初始翻译）
-        // translationMap 已经在顶部定义，包含初始翻译
-        
-        // 5. 追加远程数据
-        appendPoemsToSource(remote);
-        
-        // 6. 更新左侧面板
-        updateSidePanel(remote);
-        
-        console.log('=== Refresh complete ===');
-        console.log('Total lines in currentPoemText:', currentPoemText.split('\n').length);
-        console.log('Total lines in poemLines:', poemLines.length);
-        console.log('Total translations:', Object.keys(translationMap).length);
-      }
-    }
+    fullRefreshFromRemote('Manual');
   }
 });
+
+// 每5分钟自动刷新一次（300000ms），拉取新数据并重建贴图/侧栏
+setInterval(() => {
+  fullRefreshFromRemote('Auto(5min)');
+}, 300000);
 
 animate();
