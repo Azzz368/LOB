@@ -135,6 +135,8 @@ Leaning into the afternoons I fling my sad nets to the sea that beats on your ma
 
 The birds peck at the first stars that flash like my soul when I love you.
 
+ひきつれて 涙は雪にふりぬれど 消ぬはそえずね鴛鴦の浮寝かな.
+
 The night on its shadowy mare shedding blue tassels over the land.`;
 let poemLines = poemSource.split('\n').filter(l => l.trim().length > 0);
 // 与 poemLines 对齐的分组ID（初始为 base）用于断句边界（同一提交/发布时间作为一组）
@@ -185,7 +187,8 @@ const translationMap = {
   "You keep only darkness, my distant female, from your regard sometimes the coast of dread emerges.": "你保有黑暗，我远方的女子，在你的注视之下有时恐惧的海岸浮现。",
   "Leaning into the afternoons I fling my sad nets to the sea that beats on your marine eyes.": "倚身在暮色，在拍打你海洋般双眼的海上，我掷出我哀伤的网。",
   "The birds peck at the first stars that flash like my soul when I love you.": "夜晚的鸟群啄食第一阵群星，像爱著你的我的灵魂，闪烁著。",
-  "The night on its shadowy mare shedding blue tassels over the land.": "夜在年阴郁的马上奔驰，在大地上撒下蓝色的穗须。"
+  "The night on its shadowy mare shedding blue tassels over the land.": "夜在年阴郁的马上奔驰，在大地上撒下蓝色的穗须。",
+  "ひきつれて 涙は雪にふりぬれど 消ぬはそえずね鴛鴦の浮寝かな.": "久别的情缘，如飘雪般相聚。凄美如鸳鸯，相伴沉眠。"
 };
 
 // 左侧诗句面板（作为容器）
@@ -375,6 +378,7 @@ Oh to be able to celebrate you with all the words of joy.
 Sing,burn, flee,like abelfry at the hands of a madman.
 My sad tenderness,what comes over you all at once?
 When I have reached the most awesome and the coldest summitmy heart closes like a nocturnal flower.
+ひきつれて/涙は雪にふりぬれど/消ぬはそえずね鴛鴦の浮寝かな.
 `
 ;
 
