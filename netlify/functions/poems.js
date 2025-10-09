@@ -42,7 +42,7 @@ export default async (req, context) => {
     if (data && data.poems && data.poems.length > 0) {
       return new Response(JSON.stringify(data), {
         headers: { 
-          "Content-Type": "application/json", 
+          "Content-Type": "application/json; charset=utf-8", 
           "Cache-Control": "no-store, must-revalidate",
           "Access-Control-Allow-Origin": "*"
         }
@@ -75,7 +75,7 @@ export default async (req, context) => {
   // 最终回退到内置示例数据
   return new Response(JSON.stringify(fallback), {
     headers: { 
-      "Content-Type": "application/json", 
+      "Content-Type": "application/json; charset=utf-8", 
       "Cache-Control": "no-store",
       "Access-Control-Allow-Origin": "*"
     }

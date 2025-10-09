@@ -423,7 +423,16 @@ function createTextCanvas(text) {
   
   // 连续排版填充（记录所有单词位置）
   wordBoxes = [];
-  const words = text.split(/\s+/).filter(w => w.length > 0);
+  
+  // CJK 文本预处理：在每个 CJK 字符后插入空格，帮助分词
+  // 包括日文平假名、片假名、汉字
+  let processedText = text;
+  // 检测是否包含 CJK 字符
+  if (/[\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FFF]/.test(text)) {
+    processedText = text.replace(/([\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FFF])/g, '$1 ');
+  }
+  
+  const words = processedText.split(/\s+/).filter(w => w.length > 0);
   let wordIndex = 0;
   
   // 从负一行开始，到超出一行结束，确保垂直无缝
@@ -1073,7 +1082,7 @@ function appendPoemsToSource(remoteData) {
       p.lines.forEach(rawLine => {
         if (typeof rawLine === 'string' && rawLine.trim()) {
           let line = rawLine.trim();
-          // 兼容行内“原句 → 中文”提交格式，自动拆分为翻译映射
+          // 兼容行内"原句 → 中文"提交格式，自动拆分为翻译映射
           // 同时保留左侧原句进入贴图/匹配
           const arrowMatch = line.split(/\s*[→=>-]+\s*/);
           if (arrowMatch.length === 2) {
@@ -1084,6 +1093,10 @@ function appendPoemsToSource(remoteData) {
               line = left; // 仅把左侧原句进入文本
             }
           }
+          
+          // 将 / 替换为空格，帮助日语等无空格语言正确分词
+          line = line.replace(/\//g, ' ');
+          
           const trimmedLine = line;
           addedLines.push(trimmedLine);
           
