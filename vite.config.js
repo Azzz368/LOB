@@ -7,8 +7,7 @@ export default defineConfig({
       input: {
         main: resolve(__dirname, 'index.html'),
         submit: resolve(__dirname, 'submit.html'),
-        admin: resolve(__dirname, 'admin.html'),
-        fixEncoding: resolve(__dirname, 'fix-encoding.html')
+        admin: resolve(__dirname, 'admin.html')
       }
     }
   }
