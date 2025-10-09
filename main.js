@@ -303,9 +303,6 @@ function assembleSentenceFromIndex(startIdx) {
       zhParts.push(translationMap[trimmedEnd]);
     }
     if (END_PUNCT.test(line)) break;
-    
-    // 如果当前是组内最后一行（下一行不存在或属于其他组），也停止
-    if (j === poemLines.length - 1 || lineGroups[j + 1] !== groupId) break;
   }
   const enSentence = enParts.join(' ');
   // 句级翻译次之：整句匹配（含与不含末尾标点）
@@ -423,16 +420,7 @@ function createTextCanvas(text) {
   
   // 连续排版填充（记录所有单词位置）
   wordBoxes = [];
-  
-  // CJK 文本预处理：在每个 CJK 字符后插入空格，帮助分词
-  // 包括日文平假名、片假名、汉字
-  let processedText = text;
-  // 检测是否包含 CJK 字符
-  if (/[\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FFF]/.test(text)) {
-    processedText = text.replace(/([\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FFF])/g, '$1 ');
-  }
-  
-  const words = processedText.split(/\s+/).filter(w => w.length > 0);
+  const words = text.split(/\s+/).filter(w => w.length > 0);
   let wordIndex = 0;
   
   // 从负一行开始，到超出一行结束，确保垂直无缝
@@ -1093,10 +1081,6 @@ function appendPoemsToSource(remoteData) {
               line = left; // 仅把左侧原句进入文本
             }
           }
-          
-          // 将 / 替换为空格，帮助日语等无空格语言正确分词
-          line = line.replace(/\//g, ' ');
-          
           const trimmedLine = line;
           addedLines.push(trimmedLine);
           
