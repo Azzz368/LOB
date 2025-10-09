@@ -1082,12 +1082,11 @@ function appendPoemsToSource(remoteData) {
             }
           }
           const trimmedLine = line;
-          addedLines.push(trimmedLine);
-          
-          // 同时更新 poemLines（用于点击匹配）
+          // 仅在真正新增时才加入 addedLines 与结构，避免画布重复
           if (!poemLines.includes(trimmedLine)) {
             poemLines.push(trimmedLine);
             lineGroups.push(groupId);
+            addedLines.push(trimmedLine);
           }
         }
       });
@@ -1225,28 +1224,11 @@ async function fullRefreshFromRemote(triggerLabel) {
     console.log(`=== ${triggerLabel || 'Manual'} refresh triggered ===`);
     const remote = await fetchRemotePoems();
     if (remote && remote.poems) {
-      console.log('Refreshed poems from API:', remote.poems.length);
-      // 完全重置所有数据结构
-      console.log('Resetting all data structures...');
-      // 1. 重置 currentPoemText 为初始内容
-      currentPoemText = poemText;
-      // 2. 重置 poemLines（用于点击匹配）
-      poemLines.length = 0;
-      poemText.split('\n').filter(l => l.trim().length > 0).forEach(line => {
-        poemLines.push(line.trim());
-      });
-      // 3. 重置 poemSource（完整诗句库）
-      poemSource = poemText;
-      // 4. 重置 translationMap（保持初始翻译，远程追加覆盖）
-      // 初始 translationMap 已定义
-      // 5. 追加远程数据
+      console.log('Refreshed poems from API (incremental):', remote.poems.length);
+      // 增量模式：只追加从远端获取到的“新行”（appendPoemsToSource 已去重）
       appendPoemsToSource(remote);
-      // 6. 更新左侧面板
       updateSidePanel(remote);
-      console.log('=== Refresh complete ===');
-      console.log('Total lines in currentPoemText:', currentPoemText.split('\n').length);
-      console.log('Total lines in poemLines:', poemLines.length);
-      console.log('Total translations:', Object.keys(translationMap).length);
+      console.log('=== Incremental refresh complete ===');
     }
   } finally {
     refreshInProgress = false;
