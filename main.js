@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0xffffff);
+scene.background = null; // 透明场景，由独立的HTML白底层提供背景
 
 const camera = new THREE.PerspectiveCamera(
   45,
@@ -12,10 +12,24 @@ const camera = new THREE.PerspectiveCamera(
 camera.position.set(6, 1.0, 5.5);
 camera.lookAt(3.5, 0, 0);
 
-const renderer = new THREE.WebGLRenderer({ antialias: true });
+const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+renderer.setClearColor(0x000000, 0);
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.shadowMap.enabled = false;
 document.body.appendChild(renderer.domElement);
+renderer.domElement.style.position = 'relative';
+renderer.domElement.style.zIndex = '10000';
+
+// 页面底层白色背景（独立层，固定全屏，最底层）
+const pageBg = document.createElement('div');
+pageBg.style.position = 'fixed';
+pageBg.style.inset = '0';
+pageBg.style.background = '#ffffff';
+pageBg.style.zIndex = '0';
+pageBg.style.pointerEvents = 'none';
+document.body.appendChild(pageBg);
+renderer.domElement.style.position = 'relative';
+renderer.domElement.style.zIndex = '9000';
 
 // 背景音乐播放列表（10首，循环播放）
 let bgmAudio;
@@ -27,7 +41,7 @@ const bgmPlaylist = [
   { title: 'track04', url: new URL('./audio/track04.mp3', import.meta.url).href },
   { title: 'track05', url: new URL('./audio/track05.mp3', import.meta.url).href },
   { title: 'track06', url: new URL('./audio/track06.mp3', import.meta.url).href },
-  { title: 'track07', url: new URL('./audio/track06.mp3', import.meta.url).href }
+  { title: 'track07', url: new URL('./audio/track07.mp3', import.meta.url).href }
 ];
 
 function bgmPlayIndex(index) {
@@ -266,6 +280,9 @@ const translationMap = {
   "The night on its shadowy mare shedding blue tassels over the land.": "夜在年阴郁的马上奔驰，在大地上撒下蓝色的穗须。",
 };
 
+// 文字全局缩放系数（不影响转筒文字），用于UI与弹出诗句
+let uiFontScale = 1.3; // 你可以改它来整体放大/缩小除转筒外的文字
+
 // 左侧诗句面板（作为容器）
 const quotePanel = document.createElement('div');
 quotePanel.style.position = 'fixed';
@@ -274,7 +291,7 @@ quotePanel.style.top = '0';
 quotePanel.style.bottom = '0';
 quotePanel.style.width = '450px';
 quotePanel.style.background = '#ffffff';
-quotePanel.style.zIndex = '9997';
+quotePanel.style.zIndex = '100';
 quotePanel.style.overflow = 'hidden'; // 隐藏溢出内容
 document.body.appendChild(quotePanel);
 
@@ -298,7 +315,7 @@ function displayQuoteAtRandomPosition(text, zhOverride) {
   // 英文诗句
   const englishElement = document.createElement('div');
   englishElement.style.fontFamily = '"Sitka", serif';
-  englishElement.style.fontSize = '20px';
+  englishElement.style.fontSize = (20 * uiFontScale) + 'px';
   englishElement.style.fontWeight = '700';
   englishElement.style.color = '#000';
   englishElement.style.textAlign = 'left';
@@ -309,7 +326,7 @@ function displayQuoteAtRandomPosition(text, zhOverride) {
   // 中文翻译
   const chineseElement = document.createElement('div');
   chineseElement.style.fontFamily = 'SimSun, "宋体", serif';
-  chineseElement.style.fontSize = '16px';
+  chineseElement.style.fontSize = (16 * uiFontScale) + 'px';
   chineseElement.style.fontWeight = '400';
   chineseElement.style.color = '#999999';
   chineseElement.style.textAlign = 'left';
@@ -462,8 +479,52 @@ tiltGroup.position.x = 5.5;
 tiltGroup.rotation.z = -THREE.MathUtils.degToRad(35);
 scene.add(tiltGroup);
 
+// 可调：转筒“基点（pivot）”与缩放系数（uniform scale）
+let userScale = 4.0; // 你可以改这个数值控制整体大小（>0）
+let userHorizontalOffset = -5.0; // 新增：整体水平偏移（世界单位，正值向右，负值向左）
+const userPivot = new THREE.Vector3(0, 0, 0); // 你可以改这里的坐标作为缩放基点
+
+// 通过 pivotGroup 实现围绕任意基点缩放
+const pivotGroup = new THREE.Group();
+tiltGroup.add(pivotGroup);
+
 const drumGroup = new THREE.Group();
-tiltGroup.add(drumGroup);
+pivotGroup.add(drumGroup);
+
+// 记录未动画的基准位移（用于保持 pivot 偏移）
+const drumBasePosition = new THREE.Vector3();
+
+function applyUserPivotAndScale() {
+  // pivotGroup 放在基点位置，并对其统一缩放
+  pivotGroup.position.copy(userPivot);
+  pivotGroup.scale.setScalar(Math.max(0.1, userScale));
+  // drumGroup 向反方向平移同样的偏移，确保未缩放时视觉不变
+  drumBasePosition.copy(userPivot).multiplyScalar(-1);
+  drumGroup.position.copy(drumBasePosition);
+}
+
+// 如果需要在控制台临时调参：
+// window.setDrumScale(1.2); window.setDrumPivot(0, 2, 0)
+window.setDrumScale = function (scale) {
+  userScale = Number(scale) || 3;
+  applyUserPivotAndScale();
+  // 缩放只改变视觉大小，不重置构图锚点
+  updateResponsiveFraming();
+};
+window.setDrumPivot = function (x, y, z) {
+  userPivot.set(Number(x) || 0, Number(y) || 0, Number(z) || 0);
+  applyUserPivotAndScale();
+  // 重新锚定，反映新的枢轴点
+  setupFramingAnchors();
+  updateResponsiveFraming();
+};
+// 新：设置水平偏移
+window.setDrumOffsetX = function (x) {
+  userHorizontalOffset = Number(x) || 0;
+  updateResponsiveFraming();
+};
+
+// 初始不立即应用，等锚定后再应用（确保pivot/scale对构图产生预期影响）
 
 // 存储每个单词的布局，用于交互
 let wordBoxes = [];
@@ -650,11 +711,18 @@ function updateResponsiveFraming() {
   const size = box.getSize(new THREE.Vector3());
   const center = box.getCenter(new THREE.Vector3());
   const target = center.clone().add(compositionTargetOffset);
+  // 应用用户的水平偏移：在相机“看向”的目标上加偏移
+  target.x += userHorizontalOffset;
 
   const vFov = THREE.MathUtils.degToRad(camera.fov * 0.5);
   const fitHeightDistance = (size.y * 0.5) / Math.tan(vFov);
   const fitWidthDistance = (size.x * 0.5) / (Math.tan(vFov) * camera.aspect);
-  const distance = Math.max(fitHeightDistance, fitWidthDistance) * 1.08; // 留白系数
+  let distance = Math.max(fitHeightDistance, fitWidthDistance) * 1.08; // 留白系数
+  // 关键：按当前缩放系数拉近相机，让 userScale 直观生效
+  const currentScale = (typeof pivotGroup !== 'undefined' && pivotGroup.scale) ? pivotGroup.scale.x : 1.0;
+  if (currentScale && currentScale > 0) {
+    distance = distance / currentScale;
+  }
 
   const newPos = target.clone().add(initialViewDir.clone().multiplyScalar(distance));
   camera.position.copy(newPos);
@@ -835,7 +903,7 @@ function addPanelLine(enText, zhText) {
 
   const en = document.createElement('div');
   en.style.fontFamily = '"Sitka", serif';
-  en.style.fontSize = '13px';
+  en.style.fontSize = (13 * uiFontScale) + 'px';
   en.style.color = '#333333';
   en.style.fontWeight = '600';
   en.style.textAlign = 'left';
@@ -844,7 +912,7 @@ function addPanelLine(enText, zhText) {
 
   const zh = document.createElement('div');
   zh.style.fontFamily = 'SimSun, "宋体", serif';
-  zh.style.fontSize = '12px';
+  zh.style.fontSize = (12 * uiFontScale) + 'px';
   zh.style.color = '#666666';
   zh.style.fontWeight = '400';
   zh.style.textAlign = 'left';
@@ -875,7 +943,7 @@ function updateSidePanel(poemsData) {
   // 添加标题
   const title = document.createElement('div');
   title.style.fontFamily = '"Sitka", serif';
-  title.style.fontSize = '11px';
+  title.style.fontSize = (11 * uiFontScale) + 'px';
   title.style.color = '#999999';
   title.style.letterSpacing = '0.08em';
   title.style.textTransform = 'uppercase';
@@ -913,7 +981,7 @@ function updateSidePanel(poemsData) {
   if (poemsData.updatedAt) {
     const updateInfo = document.createElement('div');
     updateInfo.style.fontFamily = '"Sitka", serif';
-    updateInfo.style.fontSize = '10px';
+    updateInfo.style.fontSize = (10 * uiFontScale) + 'px';
     updateInfo.style.color = '#cccccc';
     updateInfo.style.marginTop = '24px';
     updateInfo.style.paddingTop = '12px';
@@ -976,7 +1044,7 @@ searchContainer.style.gap = '12px';
 
 const searchLabel = document.createElement('div');
 searchLabel.style.fontFamily = '"Sitka", serif';
-searchLabel.style.fontSize = '11px';
+searchLabel.style.fontSize = (11 * uiFontScale) + 'px';
 searchLabel.style.fontWeight = '600';
 searchLabel.style.letterSpacing = '0.08em';
 searchLabel.style.textTransform = 'uppercase';
@@ -992,7 +1060,7 @@ searchInput.style.padding = '10px 0';
 searchInput.style.border = 'none';
 searchInput.style.borderBottom = '1px solid #cccccc';
 searchInput.style.fontFamily = '"Sitka", serif';
-searchInput.style.fontSize = '14px';
+searchInput.style.fontSize = (14 * uiFontScale) + 'px';
 searchInput.style.background = 'transparent';
 searchInput.style.color = '#000000';
 searchInput.style.outline = 'none';
@@ -1102,7 +1170,7 @@ function animate() {
   // 上下无限循环
   const LOOP_SPAN = height;
   const wrapped = ((scrollOffset % LOOP_SPAN) + LOOP_SPAN) % LOOP_SPAN;
-  drumGroup.position.y = wrapped - LOOP_SPAN * 0.5;
+  drumGroup.position.y = drumBasePosition.y + (wrapped - LOOP_SPAN * 0.5);
   let offsetV = (scrollOffset / LOOP_SPAN) % 1;
   if (offsetV < 0) offsetV += 1;
   texture.offset.y = offsetV;
@@ -1142,9 +1210,10 @@ function animate() {
 
 // 纹理准备就绪后移除加载遮罩（本地Canvas立即完成，保险起见加一帧）
 requestAnimationFrame(() => removeLoadingOverlay());
-// 初始化并应用自适应取景
+// 初始化顺序：先锚定 → 应用pivot/scale → 自适应
 requestAnimationFrame(() => {
   setupFramingAnchors();
+  applyUserPivotAndScale();
   updateResponsiveFraming();
 });
 
