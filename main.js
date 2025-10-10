@@ -281,7 +281,7 @@ const translationMap = {
 };
 
 // 文字全局缩放系数（不影响转筒文字），用于UI与弹出诗句
-let uiFontScale = 1.3; // 你可以改它来整体放大/缩小除转筒外的文字
+let uiFontScale = 1.1; // 你可以改它来整体放大/缩小除转筒外的文字
 
 // 左侧诗句面板（作为容器）
 const quotePanel = document.createElement('div');
