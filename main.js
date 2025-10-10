@@ -16,6 +16,84 @@ const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.shadowMap.enabled = false;
 document.body.appendChild(renderer.domElement);
+
+// 背景音乐播放列表（10首，循环播放）
+let bgmAudio;
+let bgmCurrentIndex = 0;
+const bgmPlaylist = [
+  { title: 'track01', url: new URL('./audio/track01.mp3', import.meta.url).href },
+  { title: 'track02', url: new URL('./audio/track02.mp3', import.meta.url).href },
+  { title: 'track03', url: new URL('./audio/track03.mp3', import.meta.url).href },
+  { title: 'track04', url: new URL('./audio/track04.mp3', import.meta.url).href },
+  { title: 'track05', url: new URL('./audio/track05.mp3', import.meta.url).href },
+  { title: 'track06', url: new URL('./audio/track06.mp3', import.meta.url).href },
+  { title: 'track07', url: new URL('./audio/track06.mp3', import.meta.url).href }
+];
+
+function bgmPlayIndex(index) {
+  if (!bgmAudio) return;
+  if (bgmPlaylist.length === 0) return;
+  bgmCurrentIndex = (index % bgmPlaylist.length + bgmPlaylist.length) % bgmPlaylist.length;
+  bgmAudio.src = bgmPlaylist[bgmCurrentIndex].url;
+  bgmAudio.load();
+  const p = bgmAudio.play();
+  if (p && typeof p.catch === 'function') {
+    p.catch(() => {
+      // 自动播放被阻止：静默等待首次用户交互时再尝试
+    });
+  }
+}
+
+function bgmNext() {
+  bgmPlayIndex(bgmCurrentIndex + 1);
+}
+
+function startBgmIfNeeded(force) {
+  if (!bgmAudio) return;
+  if (force || bgmAudio.paused) {
+    const p = bgmAudio.play();
+    if (p && typeof p.catch === 'function') { /* ignore */ }
+  }
+}
+
+function setupBackgroundMusic() {
+  bgmAudio = new Audio();
+  bgmAudio.preload = 'auto';
+  bgmAudio.autoplay = true;
+  bgmAudio.loop = false; // 我们用播放列表循环
+  bgmAudio.crossOrigin = 'anonymous';
+  bgmAudio.controls = false;
+  bgmAudio.volume = 1.0;
+  bgmAudio.addEventListener('ended', bgmNext);
+  bgmAudio.addEventListener('error', bgmNext);
+
+  // 尝试自动播放第一首
+  bgmPlayIndex(0);
+
+  // 任意首次用户交互时再次尝试播放（规避自动播放策略）
+  const once = () => {
+    startBgmIfNeeded(true);
+    window.removeEventListener('click', once);
+    window.removeEventListener('keydown', once);
+    window.removeEventListener('pointerdown', once);
+  };
+  window.addEventListener('click', once);
+  window.addEventListener('keydown', once);
+  window.addEventListener('pointerdown', once);
+
+  // 页面切换可见性时尝试保持播放
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) {
+      startBgmIfNeeded(false);
+    }
+  });
+}
+
+setupBackgroundMusic();
+
+// 自适应取景锚点（保持当前构图比例）
+let compositionTargetOffset = new THREE.Vector3();
+let initialViewDir = new THREE.Vector3();
 // 预加载遮罩
 const loadingOverlay = document.createElement('div');
 loadingOverlay.style.position = 'fixed';
@@ -522,6 +600,16 @@ scene.add(cylinder);
 
 drumGroup.add(cylinder);
 
+// 初始化自适应取景锚点：保持当前构图不变，仅按屏幕调整距离
+function setupFramingAnchors() {
+  tiltGroup.updateWorldMatrix(true, true);
+  const box = new THREE.Box3().setFromObject(drumGroup);
+  const center = box.getCenter(new THREE.Vector3());
+  const currentTarget = new THREE.Vector3(3.5, 0, 0);
+  compositionTargetOffset.copy(currentTarget.clone().sub(center));
+  initialViewDir.copy(camera.position.clone().sub(currentTarget)).normalize();
+}
+
 // 覆盖层：用于绘制中灰色的非悬停单词
 const overlayCanvas = document.createElement('canvas');
 overlayCanvas.width = baseCanvasWidth / 2;
@@ -548,6 +636,30 @@ const overlayCylinder = new THREE.Mesh(
   overlayMaterial
 );
 drumGroup.add(overlayCylinder);
+
+// 自适应取景：在不同屏幕比例下保持主体填充比例
+function updateResponsiveFraming() {
+  // 更新相机投影与画布尺寸
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+
+  // 根据主体包围盒计算所需距离
+  tiltGroup.updateWorldMatrix(true, true);
+  const box = new THREE.Box3().setFromObject(drumGroup);
+  const size = box.getSize(new THREE.Vector3());
+  const center = box.getCenter(new THREE.Vector3());
+  const target = center.clone().add(compositionTargetOffset);
+
+  const vFov = THREE.MathUtils.degToRad(camera.fov * 0.5);
+  const fitHeightDistance = (size.y * 0.5) / Math.tan(vFov);
+  const fitWidthDistance = (size.x * 0.5) / (Math.tan(vFov) * camera.aspect);
+  const distance = Math.max(fitHeightDistance, fitWidthDistance) * 1.08; // 留白系数
+
+  const newPos = target.clone().add(initialViewDir.clone().multiplyScalar(distance));
+  camera.position.copy(newPos);
+  camera.lookAt(target);
+}
 
 const ringShape = new THREE.Shape();
 ringShape.absarc(0, 0, radius, 0, Math.PI * 2, false);
@@ -974,9 +1086,7 @@ function clearSearchHighlight() {
 
 
 window.addEventListener('resize', () => {
-  camera.aspect = window.innerWidth / window.innerHeight;
-  camera.updateProjectionMatrix();
-  renderer.setSize(window.innerWidth, window.innerHeight);
+  updateResponsiveFraming();
 });
 
 function animate() {
@@ -1032,6 +1142,11 @@ function animate() {
 
 // 纹理准备就绪后移除加载遮罩（本地Canvas立即完成，保险起见加一帧）
 requestAnimationFrame(() => removeLoadingOverlay());
+// 初始化并应用自适应取景
+requestAnimationFrame(() => {
+  setupFramingAnchors();
+  updateResponsiveFraming();
+});
 
 // 远程API配置（可接入代理或网关）
 const REMOTE_API_BASE = (window.__POEM_API_BASE__) || '';
