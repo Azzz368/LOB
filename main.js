@@ -524,6 +524,18 @@ window.setDrumOffsetX = function (x) {
   updateResponsiveFraming();
 };
 
+// 全局与背景Z轴偏移（用于整体下压平面或单独下压背景）
+let globalZOffset = 6.0; // 负值=向远处（下方）推
+let bgZOffset = 3.0;     // 仅背景额外偏移
+window.setGlobalZOffset = function (z) {
+  globalZOffset = Number(z) || 0.0;
+  tiltGroup.position.z = globalZOffset;
+  updateResponsiveFraming();
+};
+window.setBgZOffset = function (z) {
+  bgZOffset = Number(z) || 0.0;
+};
+
 // 初始不立即应用，等锚定后再应用（确保pivot/scale对构图产生预期影响）
 
 // 存储每个单词的布局，用于交互
@@ -700,8 +712,9 @@ drumGroup.add(overlayCylinder);
 
 // 背景柱体：在主柱体后方创建多根远处的柱体，旋转与主柱体一致，垂直滚动联动但方向/速度不同
 const bgCylinders = [];
-// 背景柱体左右位置的“0-100”参数映射
-let bgXPercent = [8, 15, 23, 32, 40, 55, 68, 80, 92]; // 默认9根的左右百分比（可用 setBgXPercent 调整）
+// 背景柱体左右位置的“0-100”参数映射（默认11根）
+// 按需求在“最左侧第1与第3根之间”插入两根：选用 11 与 19 作为默认插入值
+let bgXPercent = [8, 11, 15, 19, 23, 32, 40, 55, 68, 80, 92]; // 可用 setBgXPercent 调整
 // 将范围拓展为覆盖整个画布可见区域的更宽世界坐标（左右均可分布，不局限右半屏）
 let bgXRange = { min: -40.0, max: 40.0 };
 function percentToBgX(pct) {
@@ -732,17 +745,19 @@ function createBackgroundCylinders() {
   const tileFactorY = backgroundHeight / height; // 例如4倍高度则纵向重复4倍
   
   // 预设不同的空间分布与滚动方向/速度（相对简单可调）
-  // 9 根分布：使用 0-100 映射控制左右位置，深度/高度分散并“插入”新柱子到原有之间
+  // 11 根分布：使用 0-100 映射控制左右位置，新增两根插入最左侧第1与第3根之间
   const presets = [
-    { percent: bgXPercent[0] ?? 8,   dz: -12, dy:  0.0,  scrollDir: +1, speedFactor: 0.55 },
-    { percent: bgXPercent[1] ?? 15,  dz: -18, dy:  0.6,  scrollDir: -1, speedFactor: 1.25 },
-    { percent: bgXPercent[2] ?? 23,  dz: -22, dy: -0.6,  scrollDir: +1, speedFactor: 0.75 },
-    { percent: bgXPercent[3] ?? 32,  dz: -26, dy:  1.2,  scrollDir: -1, speedFactor: 2.10 },
-    { percent: bgXPercent[4] ?? 40,  dz: -30, dy: -1.0,  scrollDir: +1, speedFactor: 0.45 },
-    { percent: bgXPercent[5] ?? 55,  dz: -36, dy:  1.4,  scrollDir: -1, speedFactor: 1.35 },
-    { percent: bgXPercent[6] ?? 68,  dz: -42, dy: -1.4,  scrollDir: +1, speedFactor: 0.95 },
-    { percent: bgXPercent[7] ?? 80,  dz: -48, dy:  1.8,  scrollDir: -1, speedFactor: 2.85 },
-    { percent: bgXPercent[8] ?? 92,  dz: -56, dy: -1.8,  scrollDir: +1, speedFactor: 0.65 },
+    { percent: bgXPercent[0]  ?? 8,   dz: -12, dy:  0.0,  scrollDir: +1, speedFactor: 0.55 },
+    { percent: bgXPercent[1]  ?? 11,  dz: -15, dy:  0.3,  scrollDir: -1, speedFactor: 0.95 }, // 新增
+    { percent: bgXPercent[2]  ?? 15,  dz: -18, dy:  0.6,  scrollDir: -1, speedFactor: 1.25 },
+    { percent: bgXPercent[3]  ?? 19,  dz: -20, dy: -0.2,  scrollDir: +1, speedFactor: 0.65 }, // 新增
+    { percent: bgXPercent[4]  ?? 23,  dz: -22, dy: -0.6,  scrollDir: +1, speedFactor: 0.75 },
+    { percent: bgXPercent[5]  ?? 32,  dz: -26, dy:  1.2,  scrollDir: -1, speedFactor: 2.10 },
+    { percent: bgXPercent[6]  ?? 40,  dz: -30, dy: -1.0,  scrollDir: +1, speedFactor: 0.45 },
+    { percent: bgXPercent[7]  ?? 55,  dz: -36, dy:  1.4,  scrollDir: -1, speedFactor: 1.35 },
+    { percent: bgXPercent[8]  ?? 68,  dz: -42, dy: -1.4,  scrollDir: +1, speedFactor: 0.95 },
+    { percent: bgXPercent[9]  ?? 80,  dz: -48, dy:  1.8,  scrollDir: -1, speedFactor: 2.85 },
+    { percent: bgXPercent[10] ?? 92,  dz: -56, dy: -1.8,  scrollDir: +1, speedFactor: 0.65 },
   ];
   
   for (let i = 0; i < presets.length; i++) {
@@ -831,8 +846,21 @@ window.setBgOpacityRange = function (nearOp, farOp) {
 };
 
 // 背景柱体“距离/尺度差异”独立控制：每根 0..100
-// 直接在这里编辑 9 个数（0..100）以控制每根柱体的远近与大小
-let bgDistancePercent = [0, 8, 2, 30, 10, 25, 15, 25, 5];
+// 直接在这里编辑 11 个数（0..100）以控制每根柱体的远近与大小
+// 保留原9根的设置，在“最左侧第1与第3根之间”插入两根并赋予随机远近系数
+let bgDistancePercent = [
+  0,
+  2,
+  8,
+  43,
+  2,
+  30,
+  10,
+  25,
+  15,
+  25,
+  5
+];
 window.setBgDistance = function (index, percent) {
   const i = Number(index) | 0;
   if (i < 0 || i >= bgCylinders.length) return;
@@ -844,9 +872,8 @@ window.getBgDistance = function () {
 };
 
 // 每根柱体不透明度缩放（默认 1.0），从右往左第3、第4根适度降低
-// 顺序与 bgCylinders 一致（对应 bgXPercent 从左到右的9根）
-// 右->左 第3、第4根对应索引 6 与 5（默认降低到 0.75）
-let bgOpacityScale = [1.0, 1.0, 1.0, 1.0, 1.0, 0.65, 0.55, 0.6, 0.5];
+// 顺序与 bgCylinders 一致（对应 bgXPercent 从左到右的11根）
+let bgOpacityScale = [1.0, 0.85, 1.0, 0.75, 1.0, 0.65, 0.55, 0.6, 0.5, 0.85, 0.75];
 window.setBgOpacityScale = function (index, scale) {
   const i = Number(index) | 0;
   if (i < 0 || i >= bgCylinders.length) return;
@@ -856,6 +883,21 @@ window.setBgOpacityScale = function (index, scale) {
 };
 window.getBgOpacityScale = function () {
   return bgOpacityScale.slice();
+};
+
+// 个别柱体强制固定透明度（优先级高于距离插值与缩放），其余用 null
+// 将“插入的两根”（索引 1 与 3）固定为 0.65
+let bgOpacityFixed = [null, null, null, null, null, null, null, null, null, null, null];
+window.setBgFixedOpacity = function (index, value) {
+  const i = Number(index) | 0;
+  if (i < 0 || i >= bgCylinders.length) return;
+  if (value === null) { bgOpacityFixed[i] = null; return; }
+  const v = Number(value);
+  if (!isFinite(v)) return;
+  bgOpacityFixed[i] = Math.max(0.0, Math.min(1.0, v));
+};
+window.getBgFixedOpacity = function () {
+  return bgOpacityFixed.slice();
 };
 
 // 自适应取景：在不同屏幕比例下保持主体填充比例
@@ -925,6 +967,13 @@ const ROTATION_EASE = 0.1; // 旋转速度插值系数
 let scrollOffset = 0; // 位移累计（世界单位）
 let hoverDirection = 0; // -1 向下，+1 向上，0 停止
 const HOVER_SCROLL_SPEED = 0.0038; // 恒定缓慢速度（每帧世界单位）
+// 全局纵向滚动速度缩放系数（应用于主柱体与所有背景柱体UV滚动）
+let UV_SCROLL_MULTIPLIER = 2.8; // 默认提升到约当前的1.5倍
+window.setScrollSpeedScale = function (scale) {
+  const s = Number(scale);
+  if (!isFinite(s) || s <= 0) return;
+  UV_SCROLL_MULTIPLIER = s;
+};
 
 hoverTop.addEventListener('mouseenter', () => { hoverDirection = +1; });
 hoverTop.addEventListener('mouseleave', () => { if (hoverDirection === +1) hoverDirection = 0; });
@@ -1324,13 +1373,12 @@ function animate() {
   currentRotationSpeed += (targetRotationSpeed - currentRotationSpeed) * ROTATION_EASE;
   drumGroup.rotation.y += currentRotationSpeed;
   
-  // 悬停方向驱动的恒速滚动
-  scrollOffset += hoverDirection * HOVER_SCROLL_SPEED;
+  // 悬停方向驱动的恒速滚动（应用全局速度缩放）
+  scrollOffset += hoverDirection * HOVER_SCROLL_SPEED * UV_SCROLL_MULTIPLIER;
   
-  // 上下无限循环
-  const LOOP_SPAN = height;
-  const wrapped = ((scrollOffset % LOOP_SPAN) + LOOP_SPAN) % LOOP_SPAN;
-  drumGroup.position.y = drumBasePosition.y + (wrapped - LOOP_SPAN * 0.5);
+  // 仅滚动UV（不移动几何体），获得真正无限的上下循环
+  const LOOP_SPAN = height; // 基于几何高度的归一化
+  drumGroup.position.y = drumBasePosition.y;
   let offsetV = (scrollOffset / LOOP_SPAN) % 1;
   if (offsetV < 0) offsetV += 1;
   texture.offset.y = offsetV;
@@ -1349,7 +1397,7 @@ function animate() {
       const p = Math.max(0, Math.min(100, Number(bgDistancePercent[i] || 0)));
       const depthSpread = 1.0 + (p / 100) * 2.0;   // 1.0..3.0 展开更明显
       const targetScale = THREE.MathUtils.lerp(1.0, 0.5, p / 100); // 1.0..0.5
-      if (typeof bg.baseDz === 'number') { bg.group.position.z = bg.baseDz * depthSpread; }
+      if (typeof bg.baseDz === 'number') { bg.group.position.z = bg.baseDz * depthSpread + bgZOffset; }
       bg.group.scale.setScalar(targetScale);
       const posW = bg.group.getWorldPosition(tmp);
       const d = posW.distanceTo(camera.position);
@@ -1366,8 +1414,8 @@ function animate() {
       bg.group.rotation.y += currentRotationSpeed;
       // 根据主scrollOffset推导背景滚动（方向与速度各异）
       const bgOffset = scrollOffset * bg.speedFactor * bg.scrollDir;
-      const wrappedBg = ((bgOffset % LOOP_SPAN) + LOOP_SPAN) % LOOP_SPAN;
-      bg.group.position.y = bg.baseY + (wrappedBg - LOOP_SPAN * 0.5);
+      // 背景几何竖直位置固定，通过贴图UV偏移实现无限滚动
+      bg.group.position.y = bg.baseY;
       // 纹理偏移（与垂直位移一致，以获得无缝循环效果）
       let vBg = (bgOffset / LOOP_SPAN) % 1;
       if (vBg < 0) vBg += 1;
@@ -1378,10 +1426,16 @@ function animate() {
       const pos = bg.group.getWorldPosition(tmp);
       const d = pos.distanceTo(camera.position);
       const t = (d - minDist) / distSpan; // 0..1
-      // 基础不透明度按距离插值，再乘以每根的缩放系数（可在 main.js 中直接编辑）
-      const baseOpacity = nearOpacity + t * (farOpacity - nearOpacity);
-      const scale = (typeof bgOpacityScale[i] === 'number') ? bgOpacityScale[i] : 1.0;
-      const opacity = Math.max(0.0, Math.min(1.0, baseOpacity * scale));
+      // 若配置了固定不透明度，则优先使用；否则走距离插值 * 每根缩放
+      let opacity;
+      const fixed = Array.isArray(bgOpacityFixed) ? bgOpacityFixed[i] : null;
+      if (typeof fixed === 'number') {
+        opacity = fixed;
+      } else {
+        const baseOpacity = nearOpacity + t * (farOpacity - nearOpacity);
+        const scale = (typeof bgOpacityScale[i] === 'number') ? bgOpacityScale[i] : 1.0;
+        opacity = Math.max(0.0, Math.min(1.0, baseOpacity * scale));
+      }
       if (bg.mesh && bg.mesh.material) {
         bg.mesh.material.opacity = opacity;
         bg.mesh.material.transparent = true;
