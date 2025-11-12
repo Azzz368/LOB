@@ -698,6 +698,166 @@ const overlayCylinder = new THREE.Mesh(
 );
 drumGroup.add(overlayCylinder);
 
+// 背景柱体：在主柱体后方创建多根远处的柱体，旋转与主柱体一致，垂直滚动联动但方向/速度不同
+const bgCylinders = [];
+// 背景柱体左右位置的“0-100”参数映射
+let bgXPercent = [8, 15, 23, 32, 40, 55, 68, 80, 92]; // 默认9根的左右百分比（可用 setBgXPercent 调整）
+// 将范围拓展为覆盖整个画布可见区域的更宽世界坐标（左右均可分布，不局限右半屏）
+let bgXRange = { min: -40.0, max: 40.0 };
+function percentToBgX(pct) {
+  const p = Math.max(0, Math.min(100, Number(pct) || 0));
+  return bgXRange.min + (bgXRange.max - bgXRange.min) * (p / 100);
+}
+function createBackgroundCylinders() {
+  // 根组：跟随倾斜，但不参与pivot缩放（作为远景背景）
+  const bgRoot = new THREE.Group();
+  tiltGroup.add(bgRoot);
+  
+  // 使用更长的柱体几何体：至少是当前柱体长度的3倍（避免看到顶/底）
+  const backgroundHeight = height * 4.0;
+  const bgCylinderGeometry = new THREE.CylinderGeometry(
+    radius,
+    radius,
+    backgroundHeight,
+    segments,
+    1,
+    true
+  );
+  
+  // 使用当前贴图的快照（不随后续前端内容更新）
+  // 为了让每个背景柱体拥有独立的偏移/滚动，给每个柱体克隆一个纹理对象
+  const baseRepeat = texture ? texture.repeat.clone() : new THREE.Vector2(1, 6);
+  const baseOffset = texture ? texture.offset.clone() : new THREE.Vector2(0, 0);
+  // 关键：按高度比例复制贴图，避免拉伸（只用重复，不改变字形比例）
+  const tileFactorY = backgroundHeight / height; // 例如4倍高度则纵向重复4倍
+  
+  // 预设不同的空间分布与滚动方向/速度（相对简单可调）
+  // 9 根分布：使用 0-100 映射控制左右位置，深度/高度分散并“插入”新柱子到原有之间
+  const presets = [
+    { percent: bgXPercent[0] ?? 8,   dz: -12, dy:  0.0,  scrollDir: +1, speedFactor: 0.55 },
+    { percent: bgXPercent[1] ?? 15,  dz: -18, dy:  0.6,  scrollDir: -1, speedFactor: 1.25 },
+    { percent: bgXPercent[2] ?? 23,  dz: -22, dy: -0.6,  scrollDir: +1, speedFactor: 0.75 },
+    { percent: bgXPercent[3] ?? 32,  dz: -26, dy:  1.2,  scrollDir: -1, speedFactor: 2.10 },
+    { percent: bgXPercent[4] ?? 40,  dz: -30, dy: -1.0,  scrollDir: +1, speedFactor: 0.45 },
+    { percent: bgXPercent[5] ?? 55,  dz: -36, dy:  1.4,  scrollDir: -1, speedFactor: 1.35 },
+    { percent: bgXPercent[6] ?? 68,  dz: -42, dy: -1.4,  scrollDir: +1, speedFactor: 0.95 },
+    { percent: bgXPercent[7] ?? 80,  dz: -48, dy:  1.8,  scrollDir: -1, speedFactor: 2.85 },
+    { percent: bgXPercent[8] ?? 92,  dz: -56, dy: -1.8,  scrollDir: +1, speedFactor: 0.65 },
+  ];
+  
+  for (let i = 0; i < presets.length; i++) {
+    const cfg = presets[i];
+    const dx = percentToBgX(cfg.percent);
+    
+    // 为每个背景柱体单独克隆纹理对象（冻结为当前画面）
+    const bgTex = texture ? texture.clone() : null;
+    if (bgTex) {
+      bgTex.needsUpdate = true;
+      bgTex.wrapS = THREE.RepeatWrapping;
+      bgTex.wrapT = THREE.RepeatWrapping;
+      bgTex.minFilter = THREE.LinearMipmapLinearFilter;
+      bgTex.magFilter = THREE.LinearFilter;
+      bgTex.colorSpace = THREE.SRGBColorSpace;
+      bgTex.offset.copy(baseOffset);
+      // 纵向重复倍数，按背景几何高度复制贴图，避免被拉伸
+      bgTex.repeat.set(baseRepeat.x, (baseRepeat.y || 1) * tileFactorY);
+    }
+    
+    const bgMat = new THREE.MeshStandardMaterial({
+      color: 0xffffff,
+      map: bgTex,
+      side: THREE.DoubleSide,
+      transparent: true,
+      alphaTest: 0.1,
+      depthWrite: false,
+      roughness: 0.85,
+      metalness: 0.0,
+      opacity: 0.95
+    });
+    
+    const bgMesh = new THREE.Mesh(bgCylinderGeometry, bgMat);
+    bgMesh.castShadow = false;
+    
+    // 每个背景柱体放到单独的组，便于整体旋转与垂直滚动
+    const group = new THREE.Group();
+    group.position.set(dx, cfg.dy, cfg.dz);
+    group.add(bgMesh);
+    bgRoot.add(group);
+    
+    bgCylinders.push({
+      group,
+      mesh: bgMesh,
+      map: bgTex,
+      baseY: cfg.dy,
+      baseDz: cfg.dz,
+      scrollDir: cfg.scrollDir,
+      speedFactor: cfg.speedFactor
+    });
+  }
+}
+createBackgroundCylinders();
+
+// 控制台辅助：在线调整背景柱体的左右位置映射（0-100）与范围
+window.setBgXPercent = function (index, percent) {
+  const i = Number(index) | 0;
+  if (i < 0 || i >= bgCylinders.length) return;
+  const p = Math.max(0, Math.min(100, Number(percent) || 0));
+  bgXPercent[i] = p;
+  const dx = percentToBgX(p);
+  const c = bgCylinders[i];
+  c.group.position.x = dx;
+};
+window.setBgXRange = function (minX, maxX) {
+  const minVal = Number(minX);
+  const maxVal = Number(maxX);
+  if (!isFinite(minVal) || !isFinite(maxVal)) return;
+  bgXRange.min = Math.min(minVal, maxVal);
+  bgXRange.max = Math.max(minVal, maxVal);
+  // 重新应用所有的位置
+  for (let i = 0; i < bgCylinders.length; i++) {
+    const p = bgXPercent[i] ?? (i * 20);
+    bgCylinders[i].group.position.x = percentToBgX(p);
+  }
+};
+window.getBgXPercent = function () {
+  return bgXPercent.slice();
+};
+// 调整背景透明度范围（近处与远处的目标不透明度）
+window.setBgOpacityRange = function (nearOp, farOp) {
+  const n = Math.max(0, Math.min(1, Number(nearOp)));
+  const f = Math.max(0, Math.min(1, Number(farOp)));
+  window.__bgNearOpacity = n;
+  window.__bgFarOpacity = f;
+};
+
+// 背景柱体“距离/尺度差异”独立控制：每根 0..100
+// 直接在这里编辑 9 个数（0..100）以控制每根柱体的远近与大小
+let bgDistancePercent = [0, 8, 2, 30, 10, 25, 15, 25, 5];
+window.setBgDistance = function (index, percent) {
+  const i = Number(index) | 0;
+  if (i < 0 || i >= bgCylinders.length) return;
+  const p = Math.max(0, Math.min(100, Number(percent) || 0));
+  bgDistancePercent[i] = p;
+};
+window.getBgDistance = function () {
+  return bgDistancePercent.slice();
+};
+
+// 每根柱体不透明度缩放（默认 1.0），从右往左第3、第4根适度降低
+// 顺序与 bgCylinders 一致（对应 bgXPercent 从左到右的9根）
+// 右->左 第3、第4根对应索引 6 与 5（默认降低到 0.75）
+let bgOpacityScale = [1.0, 1.0, 1.0, 1.0, 1.0, 0.65, 0.55, 0.6, 0.5];
+window.setBgOpacityScale = function (index, scale) {
+  const i = Number(index) | 0;
+  if (i < 0 || i >= bgCylinders.length) return;
+  const s = Number(scale);
+  if (!isFinite(s)) return;
+  bgOpacityScale[i] = Math.max(0.0, Math.min(1.0, s));
+};
+window.getBgOpacityScale = function () {
+  return bgOpacityScale.slice();
+};
+
 // 自适应取景：在不同屏幕比例下保持主体填充比例
 function updateResponsiveFraming() {
   // 更新相机投影与画布尺寸
@@ -1176,6 +1336,59 @@ function animate() {
   texture.offset.y = offsetV;
   overlayTexture.offset.y = offsetV;
   overlayTexture.repeat.copy(texture.repeat);
+  
+  // 背景柱体：与主柱体一致的旋转；垂直滚动联动但方向/速度可不同
+  if (bgCylinders.length > 0) {
+    // 计算每根背景柱体与相机的距离，用于按距离设置透明度（近更透明，远更不透明）
+    const tmp = new THREE.Vector3();
+    let minDist = Infinity;
+    let maxDist = -Infinity;
+    for (let i = 0; i < bgCylinders.length; i++) {
+      const bg = bgCylinders[i];
+      // 独立距离/尺度：每根使用自己的 0..100 参数
+      const p = Math.max(0, Math.min(100, Number(bgDistancePercent[i] || 0)));
+      const depthSpread = 1.0 + (p / 100) * 2.0;   // 1.0..3.0 展开更明显
+      const targetScale = THREE.MathUtils.lerp(1.0, 0.5, p / 100); // 1.0..0.5
+      if (typeof bg.baseDz === 'number') { bg.group.position.z = bg.baseDz * depthSpread; }
+      bg.group.scale.setScalar(targetScale);
+      const posW = bg.group.getWorldPosition(tmp);
+      const d = posW.distanceTo(camera.position);
+      if (d < minDist) minDist = d;
+      if (d > maxDist) maxDist = d;
+    }
+    const nearOpacity = (typeof window.__bgNearOpacity === 'number') ? window.__bgNearOpacity : 0.25; // 近处更透明
+    const farOpacity = (typeof window.__bgFarOpacity === 'number') ? window.__bgFarOpacity : 0.80;    // 远处更不透明
+    const distSpan = Math.max(1e-6, maxDist - minDist);
+    
+    for (let i = 0; i < bgCylinders.length; i++) {
+      const bg = bgCylinders[i];
+      // 旋转与主柱体一致
+      bg.group.rotation.y += currentRotationSpeed;
+      // 根据主scrollOffset推导背景滚动（方向与速度各异）
+      const bgOffset = scrollOffset * bg.speedFactor * bg.scrollDir;
+      const wrappedBg = ((bgOffset % LOOP_SPAN) + LOOP_SPAN) % LOOP_SPAN;
+      bg.group.position.y = bg.baseY + (wrappedBg - LOOP_SPAN * 0.5);
+      // 纹理偏移（与垂直位移一致，以获得无缝循环效果）
+      let vBg = (bgOffset / LOOP_SPAN) % 1;
+      if (vBg < 0) vBg += 1;
+      if (bg.map) {
+        bg.map.offset.y = vBg;
+      }
+      // 根据距离设置不透明度
+      const pos = bg.group.getWorldPosition(tmp);
+      const d = pos.distanceTo(camera.position);
+      const t = (d - minDist) / distSpan; // 0..1
+      // 基础不透明度按距离插值，再乘以每根的缩放系数（可在 main.js 中直接编辑）
+      const baseOpacity = nearOpacity + t * (farOpacity - nearOpacity);
+      const scale = (typeof bgOpacityScale[i] === 'number') ? bgOpacityScale[i] : 1.0;
+      const opacity = Math.max(0.0, Math.min(1.0, baseOpacity * scale));
+      if (bg.mesh && bg.mesh.material) {
+        bg.mesh.material.opacity = opacity;
+        bg.mesh.material.transparent = true;
+        bg.mesh.material.needsUpdate = false;
+      }
+    }
+  }
 
   // 平滑灰色遮罩透明度过渡
   dimOpacity += (targetDimOpacity - dimOpacity) * DIM_EASE;
