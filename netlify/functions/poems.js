@@ -40,9 +40,14 @@ export default async (req, context) => {
     const data = await store.get("poems", { type: "json" });
     
     if (data && data.poems && data.poems.length > 0) {
-      return new Response(JSON.stringify(data), {
+      // 默认不下发被管理员隐藏的内容
+      const visible = {
+        ...data,
+        poems: Array.isArray(data.poems) ? data.poems.filter(p => !p?.hidden) : []
+      };
+      return new Response(JSON.stringify(visible), {
         headers: { 
-          "Content-Type": "application/json", 
+          "Content-Type": "application/json; charset=utf-8", 
           "Cache-Control": "no-store, must-revalidate",
           "Access-Control-Allow-Origin": "*"
         }
@@ -61,7 +66,7 @@ export default async (req, context) => {
         const json = await r.json();
         return new Response(JSON.stringify(json), {
           headers: { 
-            "Content-Type": "application/json", 
+            "Content-Type": "application/json; charset=utf-8", 
             "Cache-Control": "no-store",
             "Access-Control-Allow-Origin": "*"
           }
@@ -75,7 +80,7 @@ export default async (req, context) => {
   // 最终回退到内置示例数据
   return new Response(JSON.stringify(fallback), {
     headers: { 
-      "Content-Type": "application/json", 
+      "Content-Type": "application/json; charset=utf-8", 
       "Cache-Control": "no-store",
       "Access-Control-Allow-Origin": "*"
     }

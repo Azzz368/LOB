@@ -55,10 +55,12 @@ export default async (req, context) => {
       // 添加到已发布列表
       const newPoem = {
         author: submission.author,
+        source: submission.source || '',
         submissionId: submission.id,
         lines: submission.lines,
         translations: submission.translations || {},
         language: submission.language || 'en',
+        hidden: false,
         publishedAt: new Date().toISOString()
       };
       

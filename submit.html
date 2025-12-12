@@ -314,9 +314,8 @@
     <div class="header">
       <h1>SUBMIT YOUR POEM</h1>
       <p class="subtitle">
-        Share your favourite poem with us. After review,<br>
-        it will be displayed on the Library of Bable.<br>
-        分享你最爱的诗句，片刻后，它会显示在“图书馆”中.
+        Share your favourite poem with us. It will appear on the Library of Bable shortly.<br>
+        分享你最爱的诗句，提交后将很快显示在“图书馆”中。
       </p>
     </div>
     
@@ -518,8 +517,8 @@
         
         const result = await res.json();
         
-        // 显示成功消息
-        showMessage(`Submission successful. Your poem has been queued for review. Thank you for sharing.`, 'success');
+        // 显示成功消息（展览模式：提交即发布）
+        showMessage(`Submission successful. Your poem is now live on the Library of Bable. Thank you for sharing.`, 'success');
         
         // 重置表单
         document.getElementById('submitForm').reset();

@@ -31,79 +31,7 @@ document.body.appendChild(pageBg);
 renderer.domElement.style.position = 'relative';
 renderer.domElement.style.zIndex = '9000';
 
-// 背景音乐播放列表（10首，循环播放）
-let bgmAudio;
-let bgmCurrentIndex = 0;
-const bgmPlaylist = [
-  { title: 'track01', url: new URL('./audio/track01.mp3', import.meta.url).href },
-  { title: 'track02', url: new URL('./audio/track02.mp3', import.meta.url).href },
-  { title: 'track03', url: new URL('./audio/track03.mp3', import.meta.url).href },
-  { title: 'track04', url: new URL('./audio/track04.mp3', import.meta.url).href },
-  { title: 'track05', url: new URL('./audio/track05.mp3', import.meta.url).href },
-  { title: 'track06', url: new URL('./audio/track06.mp3', import.meta.url).href },
-  { title: 'track07', url: new URL('./audio/track07.mp3', import.meta.url).href }
-];
-
-function bgmPlayIndex(index) {
-  if (!bgmAudio) return;
-  if (bgmPlaylist.length === 0) return;
-  bgmCurrentIndex = (index % bgmPlaylist.length + bgmPlaylist.length) % bgmPlaylist.length;
-  bgmAudio.src = bgmPlaylist[bgmCurrentIndex].url;
-  bgmAudio.load();
-  const p = bgmAudio.play();
-  if (p && typeof p.catch === 'function') {
-    p.catch(() => {
-      // 自动播放被阻止：静默等待首次用户交互时再尝试
-    });
-  }
-}
-
-function bgmNext() {
-  bgmPlayIndex(bgmCurrentIndex + 1);
-}
-
-function startBgmIfNeeded(force) {
-  if (!bgmAudio) return;
-  if (force || bgmAudio.paused) {
-    const p = bgmAudio.play();
-    if (p && typeof p.catch === 'function') { /* ignore */ }
-  }
-}
-
-function setupBackgroundMusic() {
-  bgmAudio = new Audio();
-  bgmAudio.preload = 'auto';
-  bgmAudio.autoplay = true;
-  bgmAudio.loop = false; // 我们用播放列表循环
-  bgmAudio.crossOrigin = 'anonymous';
-  bgmAudio.controls = false;
-  bgmAudio.volume = 1.0;
-  bgmAudio.addEventListener('ended', bgmNext);
-  bgmAudio.addEventListener('error', bgmNext);
-
-  // 尝试自动播放第一首
-  bgmPlayIndex(0);
-
-  // 任意首次用户交互时再次尝试播放（规避自动播放策略）
-  const once = () => {
-    startBgmIfNeeded(true);
-    window.removeEventListener('click', once);
-    window.removeEventListener('keydown', once);
-    window.removeEventListener('pointerdown', once);
-  };
-  window.addEventListener('click', once);
-  window.addEventListener('keydown', once);
-  window.addEventListener('pointerdown', once);
-
-  // 页面切换可见性时尝试保持播放
-  document.addEventListener('visibilitychange', () => {
-    if (!document.hidden) {
-      startBgmIfNeeded(false);
-    }
-  });
-}
-
-setupBackgroundMusic();
+// 背景音乐：展览无需，已移除
 
 // 自适应取景锚点（保持当前构图比例）
 let compositionTargetOffset = new THREE.Vector3();
@@ -301,7 +229,7 @@ function displayQuoteAtRandomPosition(text, zhOverride) {
   const oldElements = quotePanel.querySelectorAll('.quote-text');
   oldElements.forEach(el => {
     el.style.opacity = '0';
-    setTimeout(() => el.remove(), 700); // 0.7s后移除
+    setTimeout(() => el.remove(), 1200); // 1.2s后移除（与过渡一致）
   });
   
   // 创建容器（包含英文和中文）
@@ -310,7 +238,8 @@ function displayQuoteAtRandomPosition(text, zhOverride) {
   quoteContainer.style.position = 'absolute';
   quoteContainer.style.maxWidth = '450px';
   quoteContainer.style.opacity = '0';
-  quoteContainer.style.transition = 'opacity 0.7s ease-in-out';
+  quoteContainer.style.transition = 'opacity 1.2s ease-in-out';
+  quoteContainer.style.willChange = 'opacity';
   
   // 英文诗句
   const englishElement = document.createElement('div');
@@ -354,9 +283,11 @@ function displayQuoteAtRandomPosition(text, zhOverride) {
   
   quotePanel.appendChild(quoteContainer);
   
-  // 触发淡入动画（需要在DOM插入后的下一帧）
+  // 触发淡入动画（双RAF更稳妥，确保浏览器完成插入/样式计算）
   requestAnimationFrame(() => {
-    quoteContainer.style.opacity = '1';
+    requestAnimationFrame(() => {
+      quoteContainer.style.opacity = '1';
+    });
   });
 }
 
@@ -710,6 +641,21 @@ const overlayCylinder = new THREE.Mesh(
 );
 drumGroup.add(overlayCylinder);
 
+// 视觉焦点带（已移除）：采用覆盖层变淡的方式替代
+
+// 确保覆盖层画布尺寸与主文本画布保持匹配（按1/2缩放）
+function initOrResizeOverlay() {
+  const w = Math.max(2, Math.floor(baseCanvasWidth / 2));
+  const h = Math.max(2, Math.floor(baseCanvasHeight / 2));
+  if (overlayCanvas.width !== w || overlayCanvas.height !== h) {
+    overlayCanvas.width = w;
+    overlayCanvas.height = h;
+    overlayTexture.needsUpdate = true;
+  }
+}
+// 初始化覆盖层尺寸（此时 baseCanvasWidth/Height 已就绪）
+initOrResizeOverlay();
+
 // 背景柱体：在主柱体后方创建多根远处的柱体，旋转与主柱体一致，垂直滚动联动但方向/速度不同
 const bgCylinders = [];
 // 背景柱体左右位置的“0-100”参数映射（默认11根）
@@ -965,8 +911,13 @@ const ROTATION_EASE = 0.1; // 旋转速度插值系数
 
 // 悬停控制：恒定缓慢速度
 let scrollOffset = 0; // 位移累计（世界单位）
-let hoverDirection = 0; // -1 向下，+1 向上，0 停止
-const HOVER_SCROLL_SPEED = 0.0038; // 恒定缓慢速度（每帧世界单位）
+// 改为自动恒定向上滚动
+let AUTO_SCROLL_SPEED = 0.0018; // 每帧世界单位，基础速度（正值=向上）
+window.setAutoScrollSpeed = function (speed) {
+  const s = Number(speed);
+  if (!isFinite(s)) return;
+  AUTO_SCROLL_SPEED = s;
+};
 // 全局纵向滚动速度缩放系数（应用于主柱体与所有背景柱体UV滚动）
 let UV_SCROLL_MULTIPLIER = 2.8; // 默认提升到约当前的1.5倍
 window.setScrollSpeedScale = function (scale) {
@@ -975,22 +926,193 @@ window.setScrollSpeedScale = function (scale) {
   UV_SCROLL_MULTIPLIER = s;
 };
 
-hoverTop.addEventListener('mouseenter', () => { hoverDirection = +1; });
-hoverTop.addEventListener('mouseleave', () => { if (hoverDirection === +1) hoverDirection = 0; });
-hoverBottom.addEventListener('mouseenter', () => { hoverDirection = -1; });
-hoverBottom.addEventListener('mouseleave', () => { if (hoverDirection === -1) hoverDirection = 0; });
+// 取消鼠标悬停上下控制（展览模式禁用）
 
-// 悬停暂停旋转 + 点击拾取 + 单词高亮
+// 射线检测（用于中心取样）
 const raycaster = new THREE.Raycaster();
 const mouseNDC = new THREE.Vector2();
 let pauseRotation = false;
-let hoveredWordIndex = -1;
-let lastHoveredWordIndex = -1;
 let dimOpacity = 0.0;        // 当前灰色遮罩透明度
 let targetDimOpacity = 0.0;  // 目标透明度
 const DIM_EASE = 0.15;       // 提高插值速度，更快响应
 const MAX_DIM_OPACITY = 0.65;
 
+// 自动展示队列（优先新内容）
+const recentShowQueue = [];
+const recentShowSet = new Set();
+
+// 当前高亮的单词索引集合（用于自动展示时高亮对应句子）
+let highlightedWordIndices = new Set();
+// 标记是否需要重绘覆盖层
+let overlayNeedsRedraw = false;
+
+// 计算停留时长（3s~6s），随句长线性映射
+function computeDwellMs(en, zh) {
+  const baseText = `${en || ''} ${zh || ''}`.trim();
+  const len = Math.max(1, baseText.length);
+  const tMin = 3000, tMax = 6000;
+  // 将长度映射到区间（阈值可调）
+  const L0 = 40, L1 = 200; // 40字以内≈3s，200字及以上≈6s
+  const t = len <= L0 ? tMin
+    : len >= L1 ? tMax
+    : Math.round(tMin + (tMax - tMin) * ((len - L0) / (L1 - L0)));
+  return t;
+}
+
+// 根据句子内容反查其在画布上的大致v坐标（0..1），优先取首个可命中的单词
+function getVForSentence(enSentence) {
+  if (!enSentence || !wordBoxes || wordBoxes.length === 0) return undefined;
+  const tokens = enSentence.split(/\s+/).map(s => s.trim()).filter(Boolean);
+  for (let t = 0; t < tokens.length; t++) {
+    const tok = tokens[t].toLowerCase();
+    for (let i = 0; i < wordBoxes.length; i++) {
+      const b = wordBoxes[i];
+      if ((b.text || '').toLowerCase() === tok) {
+        const y = b.y; // 顶部对齐坐标，[0, baseCanvasHeight)
+        const v = 1 - (y / baseCanvasHeight);
+        return Math.max(0, Math.min(1, v));
+      }
+    }
+  }
+  return undefined;
+}
+
+// 根据句子内容找到对应的所有单词在 wordBoxes 中的索引
+function getWordIndicesForSentence(enSentence) {
+  const indices = new Set();
+  if (!enSentence || !wordBoxes || wordBoxes.length === 0) return indices;
+  // 将句子拆分为单词（去除标点）
+  const tokens = enSentence.split(/\s+/).map(s => s.trim().replace(/[.,;:!?'"()[\]{}]/g, '').toLowerCase()).filter(Boolean);
+  const tokenSet = new Set(tokens);
+  for (let i = 0; i < wordBoxes.length; i++) {
+    const b = wordBoxes[i];
+    const wordClean = (b.text || '').replace(/[.,;:!?'"()[\]{}]/g, '').toLowerCase();
+    if (tokenSet.has(wordClean)) {
+      indices.add(i);
+    }
+  }
+  return indices;
+}
+
+// 绘制覆盖层：非高亮单词绘制为浅灰，高亮单词不绘制（保持原色）
+function drawOverlayExcludingIndices(indicesToExclude) {
+  overlayCtx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
+  const scale = 0.5; // 覆盖层分辨率比例
+  overlayCtx.fillStyle = '#FAFAFA'; // 浅灰色，让非目标单词变淡
+  overlayCtx.font = `${baseFontSize * scale}px "Sitka", serif`;
+  overlayCtx.textAlign = 'left';
+  overlayCtx.textBaseline = 'top';
+  
+  for (let i = 0; i < wordBoxes.length; i++) {
+    if (indicesToExclude.has(i)) continue; // 跳过高亮单词，不绘制（保持原色）
+    const b = wordBoxes[i];
+    overlayCtx.fillText(b.text, b.x * scale, b.y * scale);
+  }
+  overlayTexture.needsUpdate = true;
+}
+
+// 更新高亮：根据当前显示的句子更新覆盖层
+function updateHighlightForSentence(enSentence) {
+  highlightedWordIndices = getWordIndicesForSentence(enSentence);
+  drawOverlayExcludingIndices(highlightedWordIndices);
+  targetDimOpacity = MAX_DIM_OPACITY; // 显示覆盖层
+}
+
+// 屏幕中心取样：拾取当前正面中心区域的单词并拼句
+function sampleCenterSentence() {
+  mouseNDC.set(0, 0); // 屏幕中心
+  raycaster.setFromCamera(mouseNDC, camera);
+  const hit = raycaster.intersectObject(cylinder, false);
+  if (hit && hit.length > 0 && hit[0].uv && hit[0].face) {
+    // 判断是否正面±45°
+    const worldNormal = hit[0].face.normal.clone();
+    worldNormal.transformDirection(cylinder.matrixWorld);
+    worldNormal.normalize();
+    const cameraDir = new THREE.Vector3();
+    camera.getWorldDirection(cameraDir);
+    cameraDir.negate();
+    const dot = worldNormal.dot(cameraDir);
+    if (dot > 0.707) {
+      let uTex = hit[0].uv.x * (texture.repeat.x || 1) + (texture.offset.x || 0);
+      let vTex = hit[0].uv.y * (texture.repeat.y || 1) + (texture.offset.y || 0);
+      uTex = uTex - Math.floor(uTex);
+      vTex = vTex - Math.floor(vTex);
+      const px = uTex * baseCanvasWidth;
+      const py = (1 - vTex) * baseCanvasHeight;
+      // 找到包含该点的单词
+      for (let i = 0; i < wordBoxes.length; i++) {
+        const b = wordBoxes[i];
+        if (px >= b.x && px <= b.x + b.w && py >= b.y && py <= b.y + b.h) {
+          const ext = findExtendedSentenceForWord(b.text);
+          if (ext && (ext.en || ext.zh)) {
+            return { ...ext, v: vTex };
+          }
+          break;
+        }
+      }
+      // 没有正中命中单词：在中心上下4行范围内随机挑选一个单词再拼句
+      const half = 4;
+      const yMin = py - half * baseLineHeight;
+      const yMax = py + half * baseLineHeight;
+      const candidates = [];
+      for (let i = 0; i < wordBoxes.length; i++) {
+        const b = wordBoxes[i];
+        if (b.y >= yMin && b.y <= yMax) { candidates.push(b.text); }
+      }
+      if (candidates.length > 0) {
+        const rnd = candidates[Math.floor(Math.random() * candidates.length)];
+        const ext = findExtendedSentenceForWord(rnd);
+        if (ext && (ext.en || ext.zh)) {
+          return { ...ext, v: vTex };
+        }
+      }
+    }
+  }
+  // 兜底：随机挑选一行近邻句子
+  if (poemLines.length > 0) {
+    const idx = Math.floor(Math.random() * poemLines.length);
+    const ext = assembleSentenceFromIndex(idx);
+    return { ...ext, v: undefined };
+  }
+  return { en: '', zh: '', v: undefined };
+}
+
+// 自动展示调度
+let autoDisplayTimer = null;
+async function runAutoDisplay() {
+  // 优先新内容
+  let item = null;
+  while (recentShowQueue.length > 0 && !item) {
+    const cand = recentShowQueue.shift();
+    const key = (cand && cand.en) ? cand.en.trim() : '';
+    if (key && recentShowSet.has(key)) {
+      item = cand;
+    }
+  }
+  // 兜底：中心取样
+  if (!item) {
+    item = sampleCenterSentence();
+  }
+  if (item && (item.en || item.zh)) {
+    displayQuoteAtRandomPosition(item.en || '', item.zh || '');
+    // 根据显示的句子更新覆盖层高亮（非目标单词变淡，目标单词保持原色）
+    updateHighlightForSentence(item.en || '');
+    const dwell = computeDwellMs(item.en || '', item.zh || '');
+    window.__lastDwellMs = dwell;
+    autoDisplayTimer = setTimeout(runAutoDisplay, dwell);
+  } else {
+    // 没有可展示内容时，稍后再试
+    autoDisplayTimer = setTimeout(runAutoDisplay, 3000);
+  }
+}
+function scheduleAutoDisplayStart() {
+  if (autoDisplayTimer) clearTimeout(autoDisplayTimer);
+  autoDisplayTimer = setTimeout(runAutoDisplay, 1000);
+}
+window.kickAutoDisplay = function () {
+  if (autoDisplayTimer) clearTimeout(autoDisplayTimer);
+  runAutoDisplay();
+};
 function testIntersect(e) {
   const rect = renderer.domElement.getBoundingClientRect();
   const x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
@@ -1001,84 +1123,9 @@ function testIntersect(e) {
   return hit && hit.length > 0 ? hit[0] : null;
 }
 
-renderer.domElement.addEventListener('pointermove', (e) => {
-  // 搜索状态下不响应鼠标悬停
-  if (isSearching) return;
-  
-  const res = testIntersect(e);
-  pauseRotation = !!res;
-  targetRotationSpeed = pauseRotation ? 0 : rotationSpeed;
+// 展览模式：禁用鼠标悬停拾取与暂停旋转
 
-  // 检测悬停的单词（仅限正面四分之一圆柱）
-  hoveredWordIndex = -1;
-  if (res && res.uv && res.face && res.point) {
-    // 判断命中点是否在正面：法向量与相机方向夹角 < 90度
-    const worldNormal = res.face.normal.clone();
-    worldNormal.transformDirection(cylinder.matrixWorld);
-    worldNormal.normalize();
-    
-    const cameraDir = new THREE.Vector3();
-    camera.getWorldDirection(cameraDir);
-    cameraDir.negate(); // 相机朝向物体的方向
-    
-    const dotProduct = worldNormal.dot(cameraDir);
-    
-    // 只有dot > 0（夹角 < 90度）才认为是正面，进一步限制到±45度可用dot > 0.707
-    if (dotProduct > 0.707) { // cos(45°) ≈ 0.707，限制到正面±45度范围
-      let uTex = res.uv.x * (texture.repeat.x || 1) + (texture.offset.x || 0);
-      let vTex = res.uv.y * (texture.repeat.y || 1) + (texture.offset.y || 0);
-      uTex = uTex - Math.floor(uTex);
-      vTex = vTex - Math.floor(vTex);
-      const px = uTex * baseCanvasWidth;
-      const py = (1 - vTex) * baseCanvasHeight;
-
-      for (let i = 0; i < wordBoxes.length; i++) {
-        const b = wordBoxes[i];
-        if (px >= b.x && px <= b.x + b.w && py >= b.y && py <= b.y + b.h) {
-          hoveredWordIndex = i;
-          break;
-        }
-      }
-    }
-  }
-  targetDimOpacity = (pauseRotation && hoveredWordIndex >= 0) ? MAX_DIM_OPACITY : 0.0;
-});
-
-renderer.domElement.addEventListener('mouseleave', () => {
-  // 搜索状态下不清除
-  if (isSearching) return;
-  
-  pauseRotation = false;
-  targetRotationSpeed = rotationSpeed;
-  hoveredWordIndex = -1;
-  targetDimOpacity = 0.0;
-});
-
-renderer.domElement.addEventListener('click', (e) => {
-  const res = testIntersect(e);
-  if (res && res.uv) {
-    let uTex = res.uv.x * (texture.repeat.x || 1) + (texture.offset.x || 0);
-    let vTex = res.uv.y * (texture.repeat.y || 1) + (texture.offset.y || 0);
-    uTex = uTex - Math.floor(uTex);
-    vTex = vTex - Math.floor(vTex);
-    const px = uTex * baseCanvasWidth;
-    const py = (1 - vTex) * baseCanvasHeight;
-
-    let foundWord = '';
-    for (let i = 0; i < wordBoxes.length; i++) {
-      const b = wordBoxes[i];
-      if (px >= b.x && px <= b.x + b.w && py >= b.y && py <= b.y + b.h) {
-        foundWord = b.text;
-        break;
-      }
-    }
-    if (foundWord) {
-      const ext = findExtendedSentenceForWord(foundWord);
-      console.log('[Click sentence]', { en: ext.en, zh: ext.zh });
-      displayQuoteAtRandomPosition(ext.en, ext.zh);
-    }
-  }
-});
+// 展览模式：禁用点击选词展示诗句
 
 // 初始化完成后移除Loading遮罩
 function removeLoadingOverlay() {
@@ -1241,125 +1288,7 @@ document.addEventListener('mousemove', (e) => {
   }
 });
 
-// 创建搜索栏（瑞士极简风格）
-const searchContainer = document.createElement('div');
-searchContainer.style.position = 'fixed';
-searchContainer.style.top = '40px';
-searchContainer.style.right = '40px';
-searchContainer.style.zIndex = '9999';
-searchContainer.style.display = 'flex';
-searchContainer.style.alignItems = 'center';
-searchContainer.style.gap = '12px';
-
-const searchLabel = document.createElement('div');
-searchLabel.style.fontFamily = '"Sitka", serif';
-searchLabel.style.fontSize = (11 * uiFontScale) + 'px';
-searchLabel.style.fontWeight = '600';
-searchLabel.style.letterSpacing = '0.08em';
-searchLabel.style.textTransform = 'uppercase';
-searchLabel.style.color = '#000000';
-searchLabel.textContent = 'Search';
-searchContainer.appendChild(searchLabel);
-
-const searchInput = document.createElement('input');
-searchInput.type = 'text';
-searchInput.placeholder = 'Enter keyword...';
-searchInput.style.width = '220px';
-searchInput.style.padding = '10px 0';
-searchInput.style.border = 'none';
-searchInput.style.borderBottom = '1px solid #cccccc';
-searchInput.style.fontFamily = '"Sitka", serif';
-searchInput.style.fontSize = (14 * uiFontScale) + 'px';
-searchInput.style.background = 'transparent';
-searchInput.style.color = '#000000';
-searchInput.style.outline = 'none';
-searchInput.style.transition = 'border-color 0.3s ease';
-
-searchInput.addEventListener('focus', () => {
-  searchInput.style.borderBottomColor = '#000000';
-});
-
-searchInput.addEventListener('blur', () => {
-  searchInput.style.borderBottomColor = '#cccccc';
-});
-
-searchContainer.appendChild(searchInput);
-document.body.appendChild(searchContainer);
-
-// 搜索功能逻辑
-let isSearching = false;
-let searchKeyword = '';
-
-searchInput.addEventListener('input', (e) => {
-  searchKeyword = e.target.value.trim().toLowerCase();
-  
-  if (searchKeyword) {
-    isSearching = true;
-    pauseRotation = true;
-    targetRotationSpeed = 0;
-    applySearchHighlight(searchKeyword);
-  } else {
-    isSearching = false;
-    pauseRotation = false;
-    targetRotationSpeed = rotationSpeed;
-    clearSearchHighlight();
-  }
-});
-
-searchInput.addEventListener('blur', () => {
-  if (!searchKeyword) {
-    isSearching = false;
-    pauseRotation = false;
-    targetRotationSpeed = rotationSpeed;
-    clearSearchHighlight();
-  }
-});
-
-// 应用搜索高亮
-function applySearchHighlight(keyword) {
-  // 找到所有匹配的单词
-  const matchedIndices = [];
-  wordBoxes.forEach((box, index) => {
-    const wordLower = box.text.toLowerCase();
-    if (wordLower.includes(keyword)) {
-      matchedIndices.push(index);
-    }
-  });
-  
-  if (matchedIndices.length === 0) {
-    // 没有匹配，显示所有为灰色
-    targetDimOpacity = MAX_DIM_OPACITY;
-    hoveredWordIndex = -1;
-    return;
-  }
-  
-  // 重绘覆盖层：非匹配单词变灰
-  overlayCtx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
-  
-  const scale = 0.5;
-  overlayCtx.fillStyle = '#FAFAFA';
-  overlayCtx.font = `${baseFontSize * scale}px "Sitka", serif`;
-  overlayCtx.textAlign = 'left';
-  overlayCtx.textBaseline = 'top';
-  
-  wordBoxes.forEach((box, index) => {
-    if (!matchedIndices.includes(index)) {
-      overlayCtx.fillText(box.text, box.x * scale, box.y * scale);
-    }
-  });
-  
-  overlayTexture.needsUpdate = true;
-  targetDimOpacity = MAX_DIM_OPACITY;
-  lastHoveredWordIndex = -2; // 标记为搜索状态
-}
-
-// 清除搜索高亮
-function clearSearchHighlight() {
-  overlayCtx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
-  overlayTexture.needsUpdate = true;
-  targetDimOpacity = 0;
-  lastHoveredWordIndex = -1;
-}
+// 搜索栏与搜索高亮：展览模式移除
 
 
 window.addEventListener('resize', () => {
@@ -1373,8 +1302,8 @@ function animate() {
   currentRotationSpeed += (targetRotationSpeed - currentRotationSpeed) * ROTATION_EASE;
   drumGroup.rotation.y += currentRotationSpeed;
   
-  // 悬停方向驱动的恒速滚动（应用全局速度缩放）
-  scrollOffset += hoverDirection * HOVER_SCROLL_SPEED * UV_SCROLL_MULTIPLIER;
+  // 自动恒定向上滚动（应用全局速度缩放）
+  scrollOffset += AUTO_SCROLL_SPEED * UV_SCROLL_MULTIPLIER;
   
   // 仅滚动UV（不移动几何体），获得真正无限的上下循环
   const LOOP_SPAN = height; // 基于几何高度的归一化
@@ -1382,6 +1311,7 @@ function animate() {
   let offsetV = (scrollOffset / LOOP_SPAN) % 1;
   if (offsetV < 0) offsetV += 1;
   texture.offset.y = offsetV;
+  // 覆盖层与主纹理完全同步（跟随旋转/滚动）
   overlayTexture.offset.y = offsetV;
   overlayTexture.repeat.copy(texture.repeat);
   
@@ -1447,30 +1377,6 @@ function animate() {
   // 平滑灰色遮罩透明度过渡
   dimOpacity += (targetDimOpacity - dimOpacity) * DIM_EASE;
   overlayMaterial.opacity = dimOpacity;
-
-  // 仅在悬停单词索引真正改变时重绘覆盖层（性能优化）
-  // 搜索状态时跳过悬停重绘逻辑
-  if (!isSearching && hoveredWordIndex !== lastHoveredWordIndex) {
-    overlayCtx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
-    
-    if (hoveredWordIndex >= 0) {
-      // 绘制所有非悬停单词为浅灰色（分辨率缩放）
-      const scale = 0.5; // 覆盖层分辨率比例
-      overlayCtx.fillStyle = '#FAFAFA'; // 更浅的灰色，不那么明显
-      overlayCtx.font = `${baseFontSize * scale}px "Sitka", serif`;
-      overlayCtx.textAlign = 'left';
-      overlayCtx.textBaseline = 'top';
-      
-      for (let i = 0; i < wordBoxes.length; i++) {
-        if (i === hoveredWordIndex) continue;
-        const b = wordBoxes[i];
-        overlayCtx.fillText(b.text, b.x * scale, b.y * scale);
-      }
-    }
-    
-    overlayTexture.needsUpdate = true;
-    lastHoveredWordIndex = hoveredWordIndex;
-  }
   
   renderer.render(scene, camera);
 }
@@ -1510,6 +1416,7 @@ function appendPoemsToSource(remoteData) {
   console.log('Appending poems to source:', remoteData.poems.length);
   
   const addedLines = [];
+  const addedIndices = [];
   
   remoteData.poems.forEach((p, index) => {
     if (p && p.hidden) return; // 跳过被隐藏的已发布诗歌
@@ -1538,6 +1445,7 @@ function appendPoemsToSource(remoteData) {
             poemLines.push(trimmedLine);
             lineGroups.push(groupId);
             addedLines.push(trimmedLine);
+            addedIndices.push(poemLines.length - 1);
           }
         }
       });
@@ -1578,8 +1486,26 @@ function appendPoemsToSource(remoteData) {
     
     console.log('Poem text updated (prepended). Total lines in poemLines:', poemLines.length);
     console.log('Total translations:', Object.keys(translationMap).length);
+    // 将新增的句子加入优先展示队列（去重）
+    if (Array.isArray(addedIndices) && addedIndices.length) {
+      for (const idx of addedIndices) {
+        const sent = assembleSentenceFromIndex(idx);
+        const key = (sent.en || '').trim();
+        if (key && !recentShowSet.has(key)) {
+          recentShowSet.add(key);
+          // 新内容优先：插到队列前部
+          recentShowQueue.unshift({ en: sent.en, zh: sent.zh });
+        }
+      }
+      // 触发一次立即展示
+      if (typeof window.kickAutoDisplay === 'function') {
+        window.kickAutoDisplay();
+      }
+    }
+    return addedLines.length;
   } else {
     console.warn('No lines added from remote data');
+    return 0;
   }
 }
 
@@ -1625,6 +1551,7 @@ function rebuildTextTextureAndMapping() {
   cylinderMaterial.needsUpdate = true;
 
   // 覆盖层重建
+  initOrResizeOverlay();
   overlayCtx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
   overlayTexture.needsUpdate = true;
 
@@ -1668,22 +1595,24 @@ function scheduleDailyRefresh() {
 // 可复用：完整刷新流程（避免页面整页刷新）
 let refreshInProgress = false;
 async function fullRefreshFromRemote(triggerLabel) {
-  if (!REMOTE_ENDPOINT) return;
-  if (refreshInProgress) return;
+  if (!REMOTE_ENDPOINT) return 0;
+  if (refreshInProgress) return 0;
   refreshInProgress = true;
+  let addedCount = 0;
   try {
     console.log(`=== ${triggerLabel || 'Manual'} refresh triggered ===`);
     const remote = await fetchRemotePoems();
     if (remote && remote.poems) {
       console.log('Refreshed poems from API (incremental):', remote.poems.length);
       // 增量模式：只追加从远端获取到的“新行”（appendPoemsToSource 已去重）
-      appendPoemsToSource(remote);
+      addedCount = appendPoemsToSource(remote) || 0;
       updateSidePanel(remote);
       console.log('=== Incremental refresh complete ===');
     }
   } finally {
     refreshInProgress = false;
   }
+  return addedCount;
 }
 
 // 添加手动刷新功能（按 R 键刷新诗歌）
@@ -1693,9 +1622,76 @@ window.addEventListener('keydown', async (e) => {
   }
 });
 
-// 每5分钟自动刷新一次（300000ms），拉取新数据并重建贴图/侧栏
-setInterval(() => {
-  fullRefreshFromRemote('Auto(5min)');
-}, 300000);
+// 自适应自动刷新：有更新时加快，无更新逐步放缓；页面隐藏时放缓
+let smartRefreshTimer = null;
+let minAutoMs = 60000;   // 有更新时的最快轮询
+let maxAutoMs = 600000;  // 无更新时的最慢轮询
+let nextAutoMs = 300000; // 启动默认
+let pauseAuto = false;
+
+function scheduleNextAuto(ms) {
+  if (smartRefreshTimer) clearTimeout(smartRefreshTimer);
+  smartRefreshTimer = setTimeout(runAutoRefresh, ms);
+}
+
+async function runAutoRefresh() {
+  if (pauseAuto || document.hidden) {
+    // 页面不可见或暂停时放缓到至少5分钟
+    nextAutoMs = Math.max(nextAutoMs, 300000);
+    scheduleNextAuto(nextAutoMs);
+    return;
+  }
+  const added = await fullRefreshFromRemote('Auto(smart)');
+  if (added > 0) {
+    // 发现新内容：立即切到最快
+    nextAutoMs = minAutoMs;
+  } else {
+    // 未发现新内容：逐步放缓（1.5倍回退），上限 maxAutoMs
+    nextAutoMs = Math.min(maxAutoMs, Math.floor(nextAutoMs * 1.5));
+  }
+  scheduleNextAuto(nextAutoMs);
+}
+
+function runAutoRefreshNow() {
+  nextAutoMs = minAutoMs;
+  if (smartRefreshTimer) clearTimeout(smartRefreshTimer);
+  runAutoRefresh();
+}
+
+// 前台控制接口
+window.setAutoRefreshProfile = function (profileOrMin, maybeMax) {
+  if (typeof profileOrMin === 'string') {
+    const p = profileOrMin.toLowerCase();
+    if (p === 'aggressive') { minAutoMs = 30000; maxAutoMs = 300000; }
+    else if (p === 'eco')   { minAutoMs = 180000; maxAutoMs = 900000; }
+    else                    { minAutoMs = 60000;  maxAutoMs = 600000; }
+  } else {
+    const mi = Number(profileOrMin);
+    const ma = Number(maybeMax);
+    if (isFinite(mi)) minAutoMs = Math.max(10000, mi);
+    if (isFinite(ma)) maxAutoMs = Math.max(minAutoMs, ma);
+  }
+  nextAutoMs = Math.max(minAutoMs, Math.min(nextAutoMs, maxAutoMs));
+  scheduleNextAuto(nextAutoMs);
+};
+window.pauseAutoRefresh = function (flag) {
+  pauseAuto = !!flag;
+  if (!pauseAuto) runAutoRefreshNow();
+};
+window.kickAutoRefresh = function () {
+  runAutoRefreshNow();
+};
+
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden) {
+    runAutoRefreshNow();
+  }
+});
+
+// 启动自适应轮询
+scheduleNextAuto(nextAutoMs);
+
+// 启动自动展示循环
+scheduleAutoDisplayStart();
 
 animate();

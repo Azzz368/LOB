@@ -509,26 +509,26 @@
       <div class="message" id="message"></div>
       
       <div class="tabs">
-        <button class="tab active" onclick="switchTab('pending')">Pending</button>
-        <button class="tab" onclick="switchTab('approved')">Approved</button>
+        <button class="tab active" onclick="switchTab('all')">Uploads</button>
+        <button class="tab" onclick="switchTab('approved')">Published</button>
         <button class="tab" onclick="switchTab('rejected')">Rejected</button>
-        <button class="tab" onclick="switchTab('all')">All</button>
+        <button class="tab" onclick="switchTab('pending')">Legacy Pending</button>
       </div>
       
-      <div class="tab-content active" id="pending-tab">
-        <div id="pendingList" class="loading">Loading submissions...</div>
+      <div class="tab-content active" id="all-tab">
+        <div id="allList" class="loading">Loading submissions...</div>
       </div>
-      
+
       <div class="tab-content" id="approved-tab">
         <div id="approvedList" class="loading">Loading submissions...</div>
       </div>
-      
+
       <div class="tab-content" id="rejected-tab">
         <div id="rejectedList" class="loading">Loading submissions...</div>
       </div>
-      
-      <div class="tab-content" id="all-tab">
-        <div id="allList" class="loading">Loading submissions...</div>
+
+      <div class="tab-content" id="pending-tab">
+        <div id="pendingList" class="loading">Loading submissions...</div>
       </div>
       
       <div class="actions-bar">
@@ -590,6 +590,7 @@
         renderList('pending', submissions.filter(s => s.status === 'pending'));
         renderList('approved', submissions.filter(s => s.status === 'approved'));
         renderList('rejected', submissions.filter(s => s.status === 'rejected'));
+        // 展览模式：默认把“全部上传（Uploads）”作为主视图（可在此删除/隐藏）
         renderList('all', submissions);
         
         return true;
@@ -610,15 +611,15 @@
       statsDisplay.innerHTML = `
         <div class="stat-item">
           <div class="number">${stats.pending || 0}</div>
-          <div class="label">Pending</div>
+          <div class="label">Legacy Pending</div>
         </div>
         <div class="stat-item">
           <div class="number">${stats.approved || 0}</div>
-          <div class="label">Approved</div>
+          <div class="label">Published</div>
         </div>
         <div class="stat-item">
           <div class="number">${stats.total || 0}</div>
-          <div class="label">Total</div>
+          <div class="label">Uploads</div>
         </div>
       `;
     }
