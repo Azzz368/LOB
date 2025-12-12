@@ -36,13 +36,14 @@ export default async (req, context) => {
     // 获取待审核列表
     let submissions = await store.get("submissions", { type: "json" }) || [];
     
-    // 找到目标提交
+    // 找到目标提交（展览模式下，submissions 可能与 poems 不完全一致，因此 hide/show/delete 不强依赖 submissions）
     const submissionIndex = submissions.findIndex(s => s.id === submissionId);
-    if (submissionIndex === -1) {
+    const submission = submissionIndex !== -1 ? submissions[submissionIndex] : null;
+    
+    // approve/reject 必须存在 submission；hide/show/delete 允许仅根据 poems 操作
+    if (!submission && (action === 'approve' || action === 'reject')) {
       return new Response('Submission not found', { status: 404 });
     }
-    
-    const submission = submissions[submissionIndex];
     
     if (action === 'approve') {
       // 更新提交状态
@@ -107,8 +108,8 @@ export default async (req, context) => {
       let idx = poems.poems.findIndex(p => p && p.submissionId === submissionId);
       let targetSignature = null;
       if (idx === -1) {
-        const allSubs = await store.get("submissions", { type: "json" }) || [];
-        const sub = allSubs.find(s => s.id === submissionId);
+        // 优先用当前 submission（若存在）；否则再尝试从 submissions 列表回退匹配
+        const sub = submission || (submissions || []).find(s => s && s.id === submissionId);
         if (sub) {
           const norm = (arr) => (Array.isArray(arr) ? arr.join('\n').trim() : '');
           const subSig = `${(sub.author || '').trim()}::${norm(sub.lines)}`;
@@ -125,6 +126,7 @@ export default async (req, context) => {
         targetSignature = `${(p.author || '').trim()}::${norm(p.lines)}`;
       }
 
+      // 如果 poems 中能直接命中 submissionId，则允许继续；否则需要 signature
       if (idx === -1 && !targetSignature) {
         return new Response('Published poem not found', { status: 404 });
       }
@@ -133,19 +135,28 @@ export default async (req, context) => {
         // 1) 从已发布列表中删除所有与 targetSignature 匹配的重复副本
         const beforeCount = poems.poems.length;
         const norm = (arr) => (Array.isArray(arr) ? arr.join('\n').trim() : '');
-        poems.poems = poems.poems.filter(p => {
-          const pSig = `${(p.author || '').trim()}::${norm(p.lines)}`;
-          return pSig !== targetSignature;
-        });
+        // 若有 signature：按 signature 批量删除；否则仅删除 submissionId 精确命中
+        if (targetSignature) {
+          poems.poems = poems.poems.filter(p => {
+            const pSig = `${(p.author || '').trim()}::${norm(p.lines)}`;
+            return pSig !== targetSignature;
+          });
+        } else {
+          poems.poems = poems.poems.filter(p => !(p && p.submissionId === submissionId));
+        }
         const removedFromPoems = beforeCount - poems.poems.length;
 
         // 2) 从提交列表中物理删除该 submission 及其完全重复副本（同 author+lines）
-        let subs = await store.get("submissions", { type: "json" }) || [];
+        let subs = submissions || [];
         const beforeSubs = subs.length;
-        subs = subs.filter(s => {
-          const subSig = `${(s.author || '').trim()}::${norm(s.lines)}`;
-          return !(s.id === submissionId || subSig === targetSignature);
-        });
+        if (targetSignature) {
+          subs = subs.filter(s => {
+            const subSig = `${(s.author || '').trim()}::${norm(s.lines)}`;
+            return !(s.id === submissionId || subSig === targetSignature);
+          });
+        } else {
+          subs = subs.filter(s => !(s && s.id === submissionId));
+        }
         const removedFromSubs = beforeSubs - subs.length;
 
         // 3) 持久化变更
