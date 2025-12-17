@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="zh-Hant">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -126,6 +126,26 @@
     textarea::placeholder {
       color: #cccccc;
       font-style: italic;
+    }
+
+    /* Minimal attention pulse (3s) for missing required fields */
+    .attention {
+      animation: bwAttention 0.6s linear 5;
+    }
+
+    @keyframes bwAttention {
+      0%, 100% {
+        box-shadow: 0 0 0 0 rgba(0,0,0,0);
+        background: transparent;
+        color: #000000;
+        border-bottom-color: #000000;
+      }
+      50% {
+        box-shadow: 0 0 0 1px #000000;
+        background: #000000;
+        color: #ffffff;
+        border-bottom-color: #ffffff;
+      }
     }
     
     textarea {
@@ -315,7 +335,7 @@
       <h1>SUBMIT YOUR POEM</h1>
       <p class="subtitle">
         Share your favourite poem with us. It will appear on the Library of Bable shortly.<br>
-        分享你最爱的诗句，提交后将很快显示在“图书馆”中。
+        分享你最愛的詩句，提交後將很快顯示在「圖書館」中。
       </p>
     </div>
     
@@ -329,21 +349,23 @@
       <div class="form-group">
         <label>
           <span class="form-number">01</span>
-          Language-语言
+          <span class="label-en">Language</span><span class="label-zh">-語言</span>
           <span class="required">*</span>
         </label>
         <div class="language-selector">
           <button type="button" class="lang-btn active" data-lang="en" onclick="selectLanguage('en')">English</button>
           <button type="button" class="lang-btn" data-lang="zh" onclick="selectLanguage('zh')">中文</button>
           <button type="button" class="lang-btn" data-lang="both" onclick="selectLanguage('both')">Bilingual</button>
+          <button type="button" class="lang-btn" data-lang="other" onclick="selectLanguage('other')">Other languages</button>
         </div>
         <input type="hidden" id="language" name="language" value="en">
+        <p class="hint" id="languageHint" style="display:none;">For Japanese, Korean, Arabic, etc. (No translation pairs; the original text will be displayed as-is.)</p>
       </div>
       
       <div class="form-group">
         <label for="author">
           <span class="form-number">02</span>
-          Author-作者
+          <span class="label-en">Author</span><span class="label-zh">-作者</span>
           <span class="required">*</span>
         </label>
         <input type="text" id="author" name="author" placeholder="e.g., Pablo Neruda" required>
@@ -353,17 +375,16 @@
       <div class="form-group">
         <label for="source">
           <span class="form-number">03</span>
-          Source-来源
-          <span class="required">*</span>
+          <span class="label-en">Source (Optional)</span><span class="label-zh">-來源（可選）</span>
         </label>
-        <input type="text" id="source" name="source" placeholder="e.g., Twenty Love Poems and a Song of Despair" required>
+        <input type="text" id="source" name="source" placeholder="e.g., Twenty Love Poems and a Song of Despair">
         <p class="hint">Book title, collection, or origin of the poem</p>
       </div>
       
       <div class="form-group">
         <label for="lines">
           <span class="form-number">04</span>
-          Poem Content-内容
+          <span class="label-en">Poem Content</span><span class="label-zh">-內容</span>
           <span class="required">*</span>
         </label>
         <textarea id="lines" name="lines" placeholder="One line per verse&#10;Multiple lines supported&#10;&#10;Example:&#10;Leaning into the afternoons I cast my sad nets&#10;towards your oceanic eyes." required></textarea>
@@ -373,7 +394,7 @@
       <div class="translation-section" id="translationSection" style="display: none;">
         <h3>
           <span class="form-number">05</span>
-          Translation Pairs (Optional)-对照翻译（可选）
+          <span class="label-en">Translation Pairs (Optional)</span><span class="label-zh">-對照翻譯（可選）</span>
         </h3>
         <div id="translationsContainer">
           <div class="translation-pair">
@@ -388,7 +409,7 @@
       <div class="form-group">
         <label for="submitterName">
           <span class="form-number" id="nameNumber">06</span>
-          Your Name (Optional)-您的网名（可选）
+          <span class="label-en">Your Name (Optional)</span><span class="label-zh">-您的網名（可選）</span>
         </label>
         <input type="text" id="submitterName" name="submitterName" placeholder="Leave your name">
       </div>
@@ -396,7 +417,7 @@
       <div class="form-group">
         <label for="submitterEmail">
           <span class="form-number" id="emailNumber">07</span>
-          Contact Email (Optional)-邮箱（可选）
+          <span class="label-en">Contact Email (Optional)</span><span class="label-zh">-郵箱（可選）</span>
         </label>
         <input type="email" id="submitterEmail" name="submitterEmail" placeholder="your@email.com">
         <p class="hint">Provide your email if you wish to be notified of the review result (not publicly displayed)</p>
@@ -408,6 +429,30 @@
 
   <script>
     let currentLanguage = 'en';
+
+    function setLabelMode(lang) {
+      const showZh = lang !== 'other';
+      document.querySelectorAll('.label-zh').forEach(el => {
+        el.style.display = showZh ? '' : 'none';
+      });
+    }
+
+    function focusAndAttention(el) {
+      if (!el) return;
+      try {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      } catch (_) {}
+      try {
+        el.focus({ preventScroll: true });
+      } catch (_) {
+        el.focus();
+      }
+      el.classList.remove('attention');
+      // 触发重排以确保动画重新开始
+      void el.offsetWidth;
+      el.classList.add('attention');
+      setTimeout(() => el.classList.remove('attention'), 3000);
+    }
     
     // 更新表单编号
     function updateFormNumbers() {
@@ -438,6 +483,15 @@
       } else {
         translationSection.style.display = 'none';
       }
+
+      // Other languages 的英文说明
+      const languageHint = document.getElementById('languageHint');
+      if (languageHint) {
+        languageHint.style.display = (lang === 'other') ? 'block' : 'none';
+      }
+
+      // Other languages：下面表单标题仅保留英文
+      setLabelMode(lang);
       
       updateFormNumbers();
     }
@@ -458,10 +512,6 @@
     document.getElementById('submitForm').addEventListener('submit', async (e) => {
       e.preventDefault();
       
-      const submitBtn = document.getElementById('submitBtn');
-      submitBtn.disabled = true;
-      submitBtn.innerHTML = 'Submitting<span class="loading"></span>';
-      
       try {
         // 收集表单数据
         const author = document.getElementById('author').value.trim();
@@ -472,9 +522,21 @@
         const submitterName = document.getElementById('submitterName').value.trim();
         const submitterEmail = document.getElementById('submitterEmail').value.trim();
         
-        if (!author || !source || lines.length === 0) {
-          throw new Error('Please fill in the author, source, and poem content');
+        // 仅 author / content 必填；漏填则跳回并给 3 秒黑白闪烁边缘提示
+        if (!author) {
+          focusAndAttention(document.getElementById('author'));
+          showMessage('Please enter the author.', 'error');
+          return;
         }
+        if (lines.length === 0) {
+          focusAndAttention(document.getElementById('lines'));
+          showMessage('Please enter the poem content.', 'error');
+          return;
+        }
+
+        const submitBtn = document.getElementById('submitBtn');
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = 'Submitting<span class="loading"></span>';
         
         // 收集翻译对照
         const translations = {};
@@ -541,6 +603,7 @@
       } catch (e) {
         showMessage(`Error: ${e.message}`, 'error');
       } finally {
+        const submitBtn = document.getElementById('submitBtn');
         submitBtn.disabled = false;
         submitBtn.innerHTML = 'Submit Poem';
       }
@@ -555,6 +618,7 @@
     
     // 初始化
     updateFormNumbers();
+    setLabelMode(currentLanguage);
   </script>
 </body>
 </html>
