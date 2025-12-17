@@ -250,6 +250,9 @@ function displayQuoteAtRandomPosition(text, zhOverride) {
   englishElement.style.textAlign = 'left';
   englishElement.style.lineHeight = '1.35';
   englishElement.style.marginBottom = '8px';
+  // 支持用户提交的换行：\n 按行显示
+  englishElement.style.whiteSpace = 'pre-line';
+  englishElement.style.wordBreak = 'break-word';
   englishElement.textContent = text;
   
   // 中文翻译
@@ -260,6 +263,9 @@ function displayQuoteAtRandomPosition(text, zhOverride) {
   chineseElement.style.color = '#999999';
   chineseElement.style.textAlign = 'left';
   chineseElement.style.lineHeight = '1.5';
+  // 支持用户提交的换行：\n 按行显示
+  chineseElement.style.whiteSpace = 'pre-line';
+  chineseElement.style.wordBreak = 'break-word';
   const translation = (typeof zhOverride === 'string' && zhOverride)
     ? zhOverride
     : (translationMap[text] || '');
@@ -276,7 +282,9 @@ function displayQuoteAtRandomPosition(text, zhOverride) {
   
   // y坐标：上半部分随机
   const maxY = window.innerHeight * 0.5;
-  const randomY = Math.random() * Math.max(0, maxY - 100);
+  const isMultiline = typeof text === 'string' && text.indexOf('\n') !== -1;
+  // 多行诗句尽量从更靠上的位置开始，避免“看起来被裁掉/切割”
+  const randomY = isMultiline ? 60 : (Math.random() * Math.max(0, maxY - 100));
   
   quoteContainer.style.left = `${randomX}px`;
   quoteContainer.style.top = `${randomY}px`;
@@ -1416,7 +1424,8 @@ function appendPoemsToSource(remoteData) {
   console.log('Appending poems to source:', remoteData.poems.length);
   
   const addedLines = [];
-  const addedIndices = [];
+  // 以“整首诗（多行）”为单位加入优先展示队列，避免把用户换行诗句拆成多条展示
+  const addedPoemBlocks = [];
   
   remoteData.poems.forEach((p, index) => {
     if (p && p.hidden) return; // 跳过被隐藏的已发布诗歌
@@ -1424,6 +1433,8 @@ function appendPoemsToSource(remoteData) {
     
     // 处理诗句
     const groupId = p.publishedAt || p.submittedAt || `grp_${Date.now()}_${index}`;
+    const poemLinesAll = [];
+    let poemAddedAny = false;
     if (Array.isArray(p.lines)) {
       p.lines.forEach(rawLine => {
         if (typeof rawLine === 'string' && rawLine.trim()) {
@@ -1440,12 +1451,13 @@ function appendPoemsToSource(remoteData) {
             }
           }
           const trimmedLine = line;
+          poemLinesAll.push(trimmedLine);
           // 仅在真正新增时才加入 addedLines 与结构，避免画布重复
           if (!poemLines.includes(trimmedLine)) {
             poemLines.push(trimmedLine);
             lineGroups.push(groupId);
             addedLines.push(trimmedLine);
-            addedIndices.push(poemLines.length - 1);
+            poemAddedAny = true;
           }
         }
       });
@@ -1467,6 +1479,23 @@ function appendPoemsToSource(remoteData) {
         }
       });
     }
+    // 如果本次确实新增了这首诗的内容，则把“整首（含换行）”加入优先展示队列
+    if (poemAddedAny && poemLinesAll.length > 0) {
+      const enBlock = poemLinesAll.join('\n');
+      // 尝试逐行拼中文（有就显示，没有就留空；全空则不显示中文块）
+      const zhLines = poemLinesAll.map(enLine => {
+        const trimmedEnd = enLine.replace(END_PUNCT, '');
+        if (p.translations && typeof p.translations === 'object' && typeof p.translations[enLine] === 'string') {
+          return p.translations[enLine];
+        }
+        if (translationMap[enLine]) return translationMap[enLine];
+        if (translationMap[trimmedEnd]) return translationMap[trimmedEnd];
+        return '';
+      });
+      const zhBlockRaw = zhLines.join('\n');
+      const zhBlock = zhBlockRaw.replace(/[\n\r\s]+/g, '').length > 0 ? zhLines.join('\n') : '';
+      addedPoemBlocks.push({ en: enBlock, zh: zhBlock });
+    }
   });
   
   if (addedLines.length > 0) {
@@ -1486,15 +1515,13 @@ function appendPoemsToSource(remoteData) {
     
     console.log('Poem text updated (prepended). Total lines in poemLines:', poemLines.length);
     console.log('Total translations:', Object.keys(translationMap).length);
-    // 将新增的句子加入优先展示队列（去重）
-    if (Array.isArray(addedIndices) && addedIndices.length) {
-      for (const idx of addedIndices) {
-        const sent = assembleSentenceFromIndex(idx);
-        const key = (sent.en || '').trim();
+    // 将新增的“整首诗（多行）”加入优先展示队列（去重）
+    if (Array.isArray(addedPoemBlocks) && addedPoemBlocks.length) {
+      for (const poem of addedPoemBlocks) {
+        const key = (poem.en || '').trim();
         if (key && !recentShowSet.has(key)) {
           recentShowSet.add(key);
-          // 新内容优先：插到队列前部
-          recentShowQueue.unshift({ en: sent.en, zh: sent.zh });
+          recentShowQueue.unshift({ en: poem.en, zh: poem.zh });
         }
       }
       // 触发一次立即展示
