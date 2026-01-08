@@ -954,13 +954,13 @@ let highlightedWordIndices = new Set();
 // 标记是否需要重绘覆盖层
 let overlayNeedsRedraw = false;
 
-// 计算停留时长（3s~6s），随句长线性映射
+// 计算停留时长（3s~10s），随句长线性映射
 function computeDwellMs(en, zh) {
   const baseText = `${en || ''} ${zh || ''}`.trim();
   const len = Math.max(1, baseText.length);
-  const tMin = 3000, tMax = 6000;
+  const tMin = 3000, tMax = 10000;
   // 将长度映射到区间（阈值可调）
-  const L0 = 40, L1 = 200; // 40字以内≈3s，200字及以上≈6s
+  const L0 = 40, L1 = 900; // 40字以内≈3s，900字及以上≈10s
   const t = len <= L0 ? tMin
     : len >= L1 ? tMax
     : Math.round(tMin + (tMax - tMin) * ((len - L0) / (L1 - L0)));
@@ -1433,24 +1433,28 @@ function appendPoemsToSource(remoteData) {
     
     // 处理诗句
     const groupId = p.publishedAt || p.submittedAt || `grp_${Date.now()}_${index}`;
-    const poemLinesAll = [];
+    const poemLinesAll = []; // 用于柱体贴图（可能被截取）
+    const poemLinesForDisplay = []; // 用于左侧显示（始终保留完整文本）
     let poemAddedAny = false;
     if (Array.isArray(p.lines)) {
       // 先计算整首诗的总字数，如果超过100字则随机截取50个连贯字符
       let fullText = p.lines.map(l => (typeof l === 'string' ? l.trim() : '')).join('');
-      let linesToProcess = p.lines;
+      let linesToProcess = p.lines; // 用于柱体贴图
+      let exceedsLimit = false;
       
       if (fullText.length > 100) {
-        console.log(`Poem exceeds 100 chars (${fullText.length}), randomly selecting 50 continuous chars`);
+        exceedsLimit = true;
+        console.log(`Poem exceeds 100 chars (${fullText.length}), randomly selecting 50 continuous chars for cylinder texture`);
         // 随机选择起始位置（确保能截取50个字符）
         const maxStart = Math.max(0, fullText.length - 50);
         const startPos = Math.floor(Math.random() * (maxStart + 1));
         const selectedText = fullText.substring(startPos, startPos + 50);
         console.log(`Selected text (${startPos} to ${startPos + 50}):`, selectedText.substring(0, 30) + '...');
-        // 将截取的文本作为单行处理
+        // 将截取的文本作为单行处理（仅用于柱体贴图）
         linesToProcess = [selectedText];
       }
       
+      // 处理柱体贴图的文本（可能被截取）
       linesToProcess.forEach(rawLine => {
         if (typeof rawLine === 'string' && rawLine.trim()) {
           let line = rawLine.trim();
@@ -1476,6 +1480,19 @@ function appendPoemsToSource(remoteData) {
           }
         }
       });
+      
+      // 处理左侧显示的完整文本（始终保留原始完整内容）
+      p.lines.forEach(rawLine => {
+        if (typeof rawLine === 'string' && rawLine.trim()) {
+          let line = rawLine.trim();
+          const arrowMatch = line.split(/\s*[→=>-]+\s*/);
+          if (arrowMatch.length === 2) {
+            const left = arrowMatch[0].trim();
+            line = left;
+          }
+          poemLinesForDisplay.push(line);
+        }
+      });
     }
     
     // 处理翻译映射
@@ -1494,11 +1511,12 @@ function appendPoemsToSource(remoteData) {
         }
       });
     }
-    // 如果本次确实新增了这首诗的内容，则把“整首（含换行）”加入优先展示队列
-    if (poemAddedAny && poemLinesAll.length > 0) {
-      const enBlock = poemLinesAll.join('\n');
+    // 如果本次确实新增了这首诗的内容，则把"整首（含换行）"加入优先展示队列
+    // 使用完整文本（poemLinesForDisplay）用于左侧显示，而非截取后的文本
+    if (poemAddedAny && poemLinesForDisplay.length > 0) {
+      const enBlock = poemLinesForDisplay.join('\n');
       // 尝试逐行拼中文（有就显示，没有就留空；全空则不显示中文块）
-      const zhLines = poemLinesAll.map(enLine => {
+      const zhLines = poemLinesForDisplay.map(enLine => {
         const trimmedEnd = enLine.replace(END_PUNCT, '');
         if (p.translations && typeof p.translations === 'object' && typeof p.translations[enLine] === 'string') {
           return p.translations[enLine];
