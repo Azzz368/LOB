@@ -1436,7 +1436,22 @@ function appendPoemsToSource(remoteData) {
     const poemLinesAll = [];
     let poemAddedAny = false;
     if (Array.isArray(p.lines)) {
-      p.lines.forEach(rawLine => {
+      // 先计算整首诗的总字数，如果超过100字则随机截取50个连贯字符
+      let fullText = p.lines.map(l => (typeof l === 'string' ? l.trim() : '')).join('');
+      let linesToProcess = p.lines;
+      
+      if (fullText.length > 100) {
+        console.log(`Poem exceeds 100 chars (${fullText.length}), randomly selecting 50 continuous chars`);
+        // 随机选择起始位置（确保能截取50个字符）
+        const maxStart = Math.max(0, fullText.length - 50);
+        const startPos = Math.floor(Math.random() * (maxStart + 1));
+        const selectedText = fullText.substring(startPos, startPos + 50);
+        console.log(`Selected text (${startPos} to ${startPos + 50}):`, selectedText.substring(0, 30) + '...');
+        // 将截取的文本作为单行处理
+        linesToProcess = [selectedText];
+      }
+      
+      linesToProcess.forEach(rawLine => {
         if (typeof rawLine === 'string' && rawLine.trim()) {
           let line = rawLine.trim();
           // 兼容行内"原句 → 中文"提交格式，自动拆分为翻译映射
