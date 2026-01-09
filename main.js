@@ -1437,20 +1437,22 @@ function appendPoemsToSource(remoteData) {
     const poemLinesForDisplay = []; // 用于左侧显示（始终保留完整文本）
     let poemAddedAny = false;
     if (Array.isArray(p.lines)) {
-      // 先计算整首诗的总字数，如果超过100字则随机截取50个连贯字符
-      let fullText = p.lines.map(l => (typeof l === 'string' ? l.trim() : '')).join('');
-      let linesToProcess = p.lines; // 用于柱体贴图
+      // 先整理整首诗的完整文本（保留空格、去掉多余换行），用于右侧柱体的截取判定
+      const rawLines = p.lines.map(l => (typeof l === 'string' ? l.trim() : '')).filter(l => l);
+      const flatText = rawLines.join(' ').replace(/\s+/g, ' ').trim();
+      const charCount = flatText.length;
+      let linesToProcess = rawLines; // 默认使用完整行（旧版排版逻辑会自行换行）
       let exceedsLimit = false;
       
-      if (fullText.length > 100) {
+      if (charCount > 100) {
         exceedsLimit = true;
-        console.log(`Poem exceeds 100 chars (${fullText.length}), randomly selecting 50 continuous chars for cylinder texture`);
-        // 随机选择起始位置（确保能截取50个字符）
-        const maxStart = Math.max(0, fullText.length - 50);
+        console.log(`Poem exceeds 100 chars (${charCount}), randomly selecting 50 continuous chars for cylinder texture`);
+        // 随机选择起始位置（确保能截取50个连续字符）
+        const maxStart = Math.max(0, flatText.length - 50);
         const startPos = Math.floor(Math.random() * (maxStart + 1));
-        const selectedText = fullText.substring(startPos, startPos + 50);
+        const selectedText = flatText.substring(startPos, startPos + 50);
         console.log(`Selected text (${startPos} to ${startPos + 50}):`, selectedText.substring(0, 30) + '...');
-        // 将截取的文本作为单行处理（仅用于柱体贴图）
+        // 将截取后的“单行文本”用于柱体贴图，避免插入换行
         linesToProcess = [selectedText];
       }
       

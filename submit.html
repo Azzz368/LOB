@@ -155,6 +155,18 @@
       padding: 14px 0;
     }
     
+    /* Shake effect for over-limit content */
+    .shake {
+      animation: shake 0.35s ease-in-out 3;
+    }
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      20% { transform: translateX(-6px); }
+      40% { transform: translateX(6px); }
+      60% { transform: translateX(-4px); }
+      80% { transform: translateX(4px); }
+    }
+
     .hint {
       font-family: "Sitka", serif;
       font-size: 12px;
@@ -162,6 +174,10 @@
       margin-top: 8px;
       line-height: 1.6;
       font-style: italic;
+    }
+
+    .limit-warning {
+      color: #c00000;
     }
     
     /* Language Selector */
@@ -389,6 +405,8 @@
         </label>
         <textarea id="lines" name="lines" placeholder="One line per verse&#10;Multiple lines supported&#10;&#10;Example:&#10;Leaning into the afternoons I cast my sad nets&#10;towards your oceanic eyes." required></textarea>
         <p class="hint">Each line will be displayed as an independent verse on the cylinder</p>
+        <p class="hint" id="contentLimitHint">Limit: up to 250 Chinese characters, or 250 words for other languages.</p>
+        <p class="hint limit-warning" id="contentLimitWarning" style="display:none;">Content limit exceeded. Please shorten your submission.</p>
       </div>
       
       <div class="translation-section" id="translationSection" style="display: none;">
@@ -453,6 +471,27 @@
       el.classList.add('attention');
       setTimeout(() => el.classList.remove('attention'), 3000);
     }
+
+  function applyShake(el) {
+    if (!el) return;
+    el.classList.remove('shake');
+    void el.offsetWidth;
+    el.classList.add('shake');
+    setTimeout(() => el.classList.remove('shake'), 1200);
+  }
+  
+  function showContentLimitWarning(text) {
+    const warn = document.getElementById('contentLimitWarning');
+    if (!warn) return;
+    warn.textContent = text;
+    warn.style.display = 'block';
+  }
+  
+  function hideContentLimitWarning() {
+    const warn = document.getElementById('contentLimitWarning');
+    if (!warn) return;
+    warn.style.display = 'none';
+  }
     
     // 更新表单编号
     function updateFormNumbers() {
@@ -495,6 +534,28 @@
       
       updateFormNumbers();
     }
+
+  function getContentCount(lang, text) {
+    const trimmed = (text || '').trim();
+    if (!trimmed) return 0;
+    if (lang === 'zh') {
+      return trimmed.replace(/\s+/g, '').length; // 中文按字数
+    }
+    // 其他语言按单词数
+    return trimmed.split(/\s+/).filter(Boolean).length;
+  }
+
+  function validateContentLimit(lang, text) {
+    const trimmed = (text || '').trim();
+    if (!trimmed) return { ok: true, count: 0 };
+    const isChinese = lang === 'zh';
+    const count = getContentCount(lang, text);
+    if (count <= 250) return { ok: true, count };
+    const message = isChinese
+      ? `請將內容控制在 250 字以內（目前 ${count} 字）`
+      : `Please keep within 250 words for non-Chinese submissions (current ${count}).`;
+    return { ok: false, count, message };
+  }
     
     // 添加翻译对
     function addTranslationPair() {
@@ -532,6 +593,19 @@
           focusAndAttention(document.getElementById('lines'));
           showMessage('Please enter the poem content.', 'error');
           return;
+        }
+
+        // 长度限制：中文最多250字；非中文最多250词
+        const limitCheck = validateContentLimit(language, linesText);
+        if (!limitCheck.ok) {
+          const linesEl = document.getElementById('lines');
+          focusAndAttention(linesEl);
+          applyShake(linesEl);
+          showContentLimitWarning(limitCheck.message);
+          showMessage(limitCheck.message, 'error');
+          return;
+        } else {
+          hideContentLimitWarning();
         }
 
         const submitBtn = document.getElementById('submitBtn');
