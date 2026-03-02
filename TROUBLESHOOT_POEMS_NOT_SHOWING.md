@@ -8,7 +8,7 @@
 
 ### 1️⃣ 打开浏览器控制台（必须！）
 
-访问 `https://libraryofbable.netlify.app/`
+访问 `https://entropybabel.art/`
 
 按 **F12** 打开开发者工具 → **Console** 标签
 
@@ -40,7 +40,7 @@ Failed to fetch
 
 在浏览器打开：
 ```
-https://libraryofbable.netlify.app/.netlify/functions/poems
+https://entropybabel.art/.netlify/functions/poems
 ```
 
 #### ✅ 期望返回（包含你审核的诗歌）：
@@ -117,7 +117,7 @@ https://libraryofbable.netlify.app/.netlify/functions/poems
 
 ### Step 1: 提交诗歌
 
-访问 `https://libraryofbable.netlify.app/submit.html`
+访问 `https://entropybabel.art/submit.html`
 
 1. 填写表单并提交
 2. 看到成功消息："Submission successful..."
@@ -135,7 +135,7 @@ https://libraryofbable.netlify.app/.netlify/functions/poems
 
 ### Step 2: 管理员审核
 
-访问 `https://libraryofbable.netlify.app/admin.html`
+访问 `https://entropybabel.art/admin.html`
 
 1. 输入密码登录
 2. **打开控制台（F12）→ Network 标签**
@@ -179,7 +179,7 @@ https://libraryofbable.netlify.app/.netlify/functions/poems
 
 **立即**访问：
 ```
-https://libraryofbable.netlify.app/.netlify/functions/poems
+https://entropybabel.art/.netlify/functions/poems
 ```
 
 **刷新几次**（Ctrl+R），查看返回数据：
@@ -188,7 +188,7 @@ https://libraryofbable.netlify.app/.netlify/functions/poems
 
 ### Step 4: 主页刷新
 
-访问 `https://libraryofbable.netlify.app/`
+访问 `https://entropybabel.art/`
 
 1. **硬刷新**：Ctrl+Shift+R（清除缓存）
 2. **按 R 键**：手动触发重新加载

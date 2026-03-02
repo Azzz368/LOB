@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Entropy Loop Test Client</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="layout">
+      <section class="panel input-panel">
+        <h1>Entropy Loop Test Client</h1>
+        <label for="poemInput">Input</label>
+        <textarea id="poemInput" rows="6" placeholder="Type your poem line..."></textarea>
+        <div class="controls">
+          <label for="langSelect">Language</label>
+          <select id="langSelect">
+            <option value="auto">Auto detect</option>
+            <option value="en">English</option>
+            <option value="zh">中文</option>
+            <option value="es">Español</option>
+            <option value="fr">Français</option>
+            <option value="de">Deutsch</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+        <button id="submitBtn">Submit</button>
+        <p class="hint">Auto-detect is recommended. Data is sent to local FastAPI.</p>
+      </section>
+      <section class="panel display-panel">
+        <div class="display-header">
+          <h2>Live Output</h2>
+          <span id="wsStatus" class="status">WS: connecting…</span>
+        </div>
+        <div id="stream" class="stream"></div>
+      </section>
+    </div>
+    <script src="app.js"></script>
+  </body>
+</html>

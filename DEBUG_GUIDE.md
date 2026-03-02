@@ -6,7 +6,7 @@
 
 #### 1. 打开浏览器控制台（F12）
 
-访问 `https://libraryofbable.netlify.app/`，按 F12 打开开发者工具，查看 Console 标签页。
+访问 `https://entropybabel.art/`，按 F12 打开开发者工具，查看 Console 标签页。
 
 **期望看到的日志**：
 ```
@@ -21,7 +21,7 @@ Loaded poems: X
 
 #### 2. 检查 API 是否正常
 
-直接访问：`https://libraryofbable.netlify.app/.netlify/functions/poems`
+直接访问：`https://entropybabel.art/.netlify/functions/poems`
 
 **期望返回**：
 ```json
@@ -43,9 +43,9 @@ Loaded poems: X
 
 #### 3. 验证审核流程
 
-1. 访问 `https://libraryofbable.netlify.app/submit.html`
+1. 访问 `https://entropybabel.art/submit.html`
 2. 提交一首测试诗歌
-3. 访问 `https://libraryofbable.netlify.app/admin.html`
+3. 访问 `https://entropybabel.art/admin.html`
 4. 登录并查看"Pending"标签
 5. **必须点击"Approve"按钮**才会发布
 6. 刷新主页（或按 R 键）查看

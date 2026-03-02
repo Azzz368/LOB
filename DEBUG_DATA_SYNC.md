@@ -4,7 +4,7 @@
 
 ### 步骤 1：提交诗歌
 
-1. 访问 `https://libraryofbable.netlify.app/submit.html`
+1. 访问 `https://entropybabel.art/submit.html`
 2. 填写表单：
    - 作者：`Test Author`
    - 来源：`Test Source`
@@ -22,7 +22,7 @@
 
 ### 步骤 2：管理员审核
 
-1. 访问 `https://libraryofbable.netlify.app/admin.html`
+1. 访问 `https://entropybabel.art/admin.html`
 2. 登录
 3. 找到刚提交的诗歌
 4. **点击 "Approve" 按钮**
@@ -30,7 +30,7 @@
 
 ### 步骤 3：验证 API 返回
 
-访问：`https://libraryofbable.netlify.app/.netlify/functions/poems`
+访问：`https://entropybabel.art/.netlify/functions/poems`
 
 **期望看到**：
 ```json
@@ -61,7 +61,7 @@
 
 ### 步骤 4：验证主页数据同步
 
-访问 `https://libraryofbable.netlify.app/`
+访问 `https://entropybabel.art/`
 
 #### 4.1 打开控制台（F12 → Console）
 

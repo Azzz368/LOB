@@ -513,6 +513,9 @@
         <button class="tab" onclick="switchTab('approved')">Published</button>
         <button class="tab" onclick="switchTab('rejected')">Rejected</button>
         <button class="tab" onclick="switchTab('pending')">Legacy Pending</button>
+        <button class="tab" onclick="switchTab('logs')">Queue Logs</button>
+        <button class="tab" onclick="switchTab('local-user')">Local User</button>
+        <button class="tab" onclick="switchTab('local-ai')">Local AI</button>
       </div>
       
       <div class="tab-content active" id="all-tab">
@@ -530,9 +533,22 @@
       <div class="tab-content" id="pending-tab">
         <div id="pendingList" class="loading">Loading submissions...</div>
       </div>
+
+      <div class="tab-content" id="logs-tab">
+        <div id="logsList" class="loading">Loading queue logs...</div>
+      </div>
+
+      <div class="tab-content" id="local-user-tab">
+        <div id="local-userList" class="loading">Loading local user poems...</div>
+      </div>
+
+      <div class="tab-content" id="local-ai-tab">
+        <div id="local-aiList" class="loading">Loading local AI poems...</div>
+      </div>
       
       <div class="actions-bar">
         <button class="btn btn-secondary" onclick="loadSubmissions()">Refresh</button>
+        <button class="btn btn-secondary" onclick="loadQueueLogs()">Refresh Logs</button>
         <button class="btn btn-secondary" onclick="logout()">Logout</button>
       </div>
     </div>
@@ -556,6 +572,8 @@
       if (success) {
         document.getElementById('authSection').classList.add('hidden');
         document.getElementById('adminSection').classList.add('visible');
+          loadQueueLogs();
+        loadLocalPoems();
       } else {
         showMessage('authMessage', 'Invalid password or connection failed', 'error');
         authToken = '';
@@ -598,6 +616,121 @@
         console.error('Load error:', e);
         return false;
       }
+    }
+
+    // Load queue logs (local test)
+    async function loadQueueLogs() {
+      const container = document.getElementById('logsList');
+      container.classList.add('loading');
+      container.textContent = 'Loading queue logs...';
+      try {
+        const res = await fetch('/queue-logs');
+        if (!res.ok) {
+          throw new Error('Failed to load logs');
+        }
+        const data = await res.json();
+        const dates = Object.keys(data || {}).sort((a, b) => b.localeCompare(a));
+        if (dates.length === 0) {
+          container.innerHTML = `
+            <div class="empty-state">
+              <div class="icon">—</div>
+              <p>No queue logs yet</p>
+            </div>
+          `;
+          return;
+        }
+        container.innerHTML = dates
+          .map(date => {
+            const logs = data[date] || [];
+            return `
+              <div class="submission-card pending">
+                <div class="card-header">
+                  <h3>${date}</h3>
+                  <span class="status-badge pending">${logs.length} items</span>
+                </div>
+                <div class="card-content">
+                  ${logs
+                    .map(log => {
+                      const time = log.created_at ? log.created_at.replace('T', ' ').slice(0, 19) : '';
+                      const payload = log.payload && Object.keys(log.payload).length
+                        ? `<div class="meta-line"><strong>Payload:</strong> ${JSON.stringify(log.payload)}</div>`
+                        : '';
+                      return `
+                        <div class="meta-line"><strong>${time}</strong> · ${log.event_type}</div>
+                        <div class="meta-line">${log.message}</div>
+                        ${payload}
+                      `;
+                    })
+                    .join('')}
+                </div>
+              </div>
+            `;
+          })
+          .join('');
+      } catch (e) {
+        console.error('Log load error:', e);
+        container.innerHTML = `
+          <div class="empty-state">
+            <div class="icon">!</div>
+            <p>Queue log endpoint not available</p>
+          </div>
+        `;
+      }
+    }
+
+    async function loadLocalPoems() {
+      try {
+        const res = await fetch('/local-poems');
+        if (!res.ok) {
+          throw new Error('Failed to load local poems');
+        }
+        const data = await res.json();
+        renderLocalList('local-user', data.user || []);
+        renderLocalList('local-ai', data.ai || []);
+      } catch (e) {
+        console.error('Local poem load error:', e);
+        renderLocalList('local-user', [], true);
+        renderLocalList('local-ai', [], true);
+      }
+    }
+
+    function renderLocalList(type, items, error = false) {
+      const container = document.getElementById(`${type}List`);
+      if (error) {
+        container.innerHTML = `
+          <div class="empty-state">
+            <div class="icon">!</div>
+            <p>Local poem endpoint not available</p>
+          </div>
+        `;
+        return;
+      }
+      if (!items.length) {
+        container.innerHTML = `
+          <div class="empty-state">
+            <div class="icon">—</div>
+            <p>No items</p>
+          </div>
+        `;
+        return;
+      }
+      container.innerHTML = items
+        .map(item => {
+          const time = item.created_at ? item.created_at.replace('T', ' ').slice(0, 19) : '';
+          return `
+            <div class="submission-card pending">
+              <div class="card-header">
+                <h3>Generation ${item.generation}</h3>
+                <span class="status-badge pending">${item.status}</span>
+              </div>
+              <div class="card-content">
+                <div class="lines">${item.text}</div>
+                <div class="card-meta">${time}</div>
+              </div>
+            </div>
+          `;
+        })
+        .join('');
     }
     
     // Update stats
@@ -778,6 +911,12 @@
       
       document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
       document.getElementById(`${tabName}-tab`).classList.add('active');
+        if (tabName === 'logs') {
+          loadQueueLogs();
+        }
+      if (tabName === 'local-user' || tabName === 'local-ai') {
+        loadLocalPoems();
+      }
     }
     
     // Show message

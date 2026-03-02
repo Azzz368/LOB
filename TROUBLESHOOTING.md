@@ -7,10 +7,10 @@
 #### 步骤 1：删除错误的环境变量
 
 1. 登录 Netlify 控制台
-2. 进入你的站点 `libraryofbable.netlify.app`
+2. 进入你的站点 `entropybabel.art`
 3. **Site settings** → **Environment variables**
 4. **删除** `POEMS_JSON_URL` 变量（或将其留空）
-   - ❌ 错误值：`https://libraryofbable.netlify.app/poems.json`
+    - ❌ 错误值：`https://entropybabel.art/poems.json`
    - ✅ 正确做法：**完全删除这个变量**
 
 **为什么要删除？**
@@ -37,9 +37,9 @@ Netlify 会自动触发部署。
 
 等待部署完成（通常 1-3 分钟），然后访问：
 
-- ✅ 主页：`https://libraryofbable.netlify.app/`
-- ✅ 投稿页：`https://libraryofbable.netlify.app/submit.html`
-- ✅ 管理后台：`https://libraryofbable.netlify.app/admin.html`
+- ✅ 主页：`https://entropybabel.art/`
+- ✅ 投稿页：`https://entropybabel.art/submit.html`
+- ✅ 管理后台：`https://entropybabel.art/admin.html`
 
 ---
 
@@ -141,10 +141,10 @@ Netlify 会自动触发部署。
 
 部署完成后，按顺序测试：
 
-- [ ] 访问主页 `https://libraryofbable.netlify.app/` 正常显示
-- [ ] 访问投稿页 `https://libraryofbable.netlify.app/submit.html` 正常显示
+- [ ] 访问主页 `https://entropybabel.art/` 正常显示
+- [ ] 访问投稿页 `https://entropybabel.art/submit.html` 正常显示
 - [ ] 填写并提交一首测试诗歌
-- [ ] 访问管理后台 `https://libraryofbable.netlify.app/admin.html`
+- [ ] 访问管理后台 `https://entropybabel.art/admin.html`
 - [ ] 使用 `ADMIN_PASSWORD` 登录成功
 - [ ] 在"待审核"标签看到刚才提交的诗歌
 - [ ] 点击"✅ 通过并发布"审核通过
