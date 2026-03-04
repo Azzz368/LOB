@@ -254,9 +254,54 @@ class LLMPoetryStitcher:
         }
         with httpx.Client(timeout=timeout) as client:
             response = client.post(url, headers=headers, json=payload)
+        if response.status_code == 404:
+            return self._call_ollama_native(base_url, model, messages, timeout)
         response.raise_for_status()
         data = response.json()
         return data["choices"][0]["message"]["content"]
+
+    def _call_ollama_native(
+        self,
+        base_url: str,
+        model: str,
+        messages: List[Dict],
+        timeout: int,
+    ) -> str:
+        url = base_url.rstrip("/") + "/api/chat"
+        payload = {
+            "model": model,
+            "messages": messages,
+            "stream": False,
+        }
+        with httpx.Client(timeout=timeout) as client:
+            response = client.post(url, json=payload)
+        if response.status_code == 404:
+            return self._call_ollama_generate(base_url, model, messages, timeout)
+        response.raise_for_status()
+        data = response.json()
+        return data.get("message", {}).get("content", "")
+
+    def _call_ollama_generate(
+        self,
+        base_url: str,
+        model: str,
+        messages: List[Dict],
+        timeout: int,
+    ) -> str:
+        url = base_url.rstrip("/") + "/api/generate"
+        prompt = "\n".join(
+            f"{msg.get('role', 'user')}: {msg.get('content', '')}" for msg in messages
+        )
+        payload = {
+            "model": model,
+            "prompt": prompt,
+            "stream": False,
+        }
+        with httpx.Client(timeout=timeout) as client:
+            response = client.post(url, json=payload)
+        response.raise_for_status()
+        data = response.json()
+        return data.get("response", "")
 
 
 if __name__ == "__main__":

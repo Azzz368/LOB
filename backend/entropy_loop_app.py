@@ -46,6 +46,10 @@ NETLIFY_SUBMISSIONS_URL = os.getenv("NETLIFY_SUBMISSIONS_URL")
 NETLIFY_ADMIN_PASSWORD = os.getenv("NETLIFY_ADMIN_PASSWORD")
 NETLIFY_SUBMIT_URL = os.getenv("NETLIFY_SUBMIT_URL")
 NETLIFY_FETCH_LIMIT = int(os.getenv("NETLIFY_FETCH_LIMIT", "50"))
+NETLIFY_LOG_URL = os.getenv("NETLIFY_LOG_URL")
+NETLIFY_LOG_PASSWORD = os.getenv("NETLIFY_LOG_PASSWORD") or NETLIFY_ADMIN_PASSWORD
+LOCAL_JSON_ENABLED = os.getenv("ENTROPY_LOCAL_JSON_ENABLED", "true").lower() == "true"
+LOCAL_JSON_PATH = os.getenv("ENTROPY_LOCAL_JSON_PATH", "data/netlify-submissions.json")
 
 stitcher = LLMPoetryStitcher()
 _ollama_last_check = 0.0
@@ -172,6 +176,28 @@ async def log_queue_event(event_type: str, message: str, payload: dict | None = 
             ),
         )
         await db.commit()
+    await push_netlify_log(
+        {
+            "event_type": event_type,
+            "message": message,
+            "payload": payload or {},
+            "created_at": created_at,
+        }
+    )
+
+
+async def push_netlify_log(entry: dict) -> None:
+    if not NETLIFY_LOG_URL:
+        return
+    headers = {}
+    if NETLIFY_LOG_PASSWORD:
+        headers["Authorization"] = f"Bearer {NETLIFY_LOG_PASSWORD}"
+    try:
+        async with httpx.AsyncClient(timeout=8) as client:
+            resp = await client.post(NETLIFY_LOG_URL, json=entry, headers=headers)
+            resp.raise_for_status()
+    except Exception as exc:
+        logger.warning("Netlify log push failed: %s", exc)
 
 
 async def fetch_queue_logs(limit: int = 200) -> List[dict]:
@@ -298,11 +324,41 @@ async def fetch_external_poems() -> List[str]:
     if poems:
         return poems
 
+    if LOCAL_JSON_ENABLED:
+        local_poems = await fetch_local_json_poems(LOCAL_JSON_PATH)
+        if local_poems:
+            await log_queue_event("local_json", "Loaded poems from local JSON", {"count": len(local_poems)})
+            return local_poems
+
     now = datetime.now(timezone.utc).isoformat()
     return [
         {"text": f"{now} the projector hums", "source_id": f"mock-{now}-1", "source_lang": "en"},
         {"text": f"{now} light falls on concrete", "source_id": f"mock-{now}-2", "source_lang": "en"},
     ]
+
+
+async def fetch_local_json_poems(path: str) -> List[dict]:
+    try:
+        if not os.path.exists(path):
+            return []
+        with open(path, "r", encoding="utf-8") as handle:
+            data = json.load(handle)
+    except Exception as exc:
+        await log_queue_event("local_json_error", "Failed to read local JSON", {"error": str(exc)})
+        return []
+
+    items = data if isinstance(data, list) else data.get("submissions", [])
+    poems: List[dict] = []
+    for submission in items:
+        lines = submission.get("lines") or []
+        text = " ".join(lines).strip()
+        if not text:
+            continue
+        source_id = submission.get("id") or submission.get("submissionId") or text[:64]
+        source_lang = submission.get("language") or detect_language(text)
+        poems.append({"text": text, "source_id": source_id, "source_lang": source_lang})
+
+    return poems[:NETLIFY_FETCH_LIMIT]
 
 
 async def insert_poem(

@@ -618,13 +618,22 @@
       }
     }
 
-    // Load queue logs (local test)
+    function isLocalHost() {
+      return ['localhost', '127.0.0.1'].includes(window.location.hostname);
+    }
+
+    // Load queue logs (local test / production)
     async function loadQueueLogs() {
       const container = document.getElementById('logsList');
       container.classList.add('loading');
       container.textContent = 'Loading queue logs...';
       try {
-        const res = await fetch('/queue-logs');
+        const endpoint = isLocalHost()
+          ? '/queue-logs'
+          : '/.netlify/functions/queue-logs';
+        const res = await fetch(endpoint, {
+          headers: authToken ? { 'Authorization': `Bearer ${authToken}` } : {}
+        });
         if (!res.ok) {
           throw new Error('Failed to load logs');
         }
@@ -679,6 +688,11 @@
     }
 
     async function loadLocalPoems() {
+      if (!isLocalHost()) {
+        renderLocalList('local-user', [], true);
+        renderLocalList('local-ai', [], true);
+        return;
+      }
       try {
         const res = await fetch('/local-poems');
         if (!res.ok) {
