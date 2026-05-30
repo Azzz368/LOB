@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { initKeyboardInput } from './keyboard-input.js';
 
 const scene = new THREE.Scene();
 scene.background = null; // 透明场景，由独立的HTML白底层提供背景
@@ -1757,3 +1758,24 @@ scheduleNextAuto(nextAutoMs);
 scheduleAutoDisplayStart();
 
 animate();
+
+// ─────────────────────────────────────────────────────────────────
+// Keyboard poem input (frosted-glass bar + QR panel)
+// ─────────────────────────────────────────────────────────────────
+initKeyboardInput({
+  apiBase: (window.__POEM_API_BASE__) || '/.netlify/functions',
+  onSubmit(lines) {
+    // Immediately prepend the new verse to the drum so the author sees it appear
+    if (lines && lines.length) {
+      const text = lines.join('\n');
+      prependPoemText(text);
+      // Also push into the auto-display priority queue
+      const key = text.trim();
+      if (key && !recentShowSet.has(key)) {
+        recentShowSet.add(key);
+        recentShowQueue.unshift({ en: text, zh: '' });
+        if (typeof window.kickAutoDisplay === 'function') window.kickAutoDisplay();
+      }
+    }
+  },
+});
