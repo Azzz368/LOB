@@ -1,16 +1,13 @@
 /**
  * keyboard-input.js
  * -----------------
- * Frosted-glass poem input bar + QR-code panel for Entropy Babel.
+ * Frosted-glass poem input bar for Entropy Babel.
  *
  * Exported API
  * ------------
  *   initKeyboardInput(options)
- *     options.apiBase   – e.g. '  // ─────────────────────────────────────────────────────────────────
-  // Simple language hint (drives `language` field in submission)
-  // ─────────────────────────────────────────────────────────────────'
+ *     options.apiBase   – base URL for Netlify Functions, e.g. '/.netlify/functions'
  *     options.onSubmit  – optional callback(lines[]) after successful send
- *     options.qrDataUrl – optional pre-generated QR PNG data-URL
  */
 
 export function initKeyboardInput({ apiBase = '', onSubmit } = {}) {
@@ -237,22 +234,6 @@ export function initKeyboardInput({ apiBase = '', onSubmit } = {}) {
       toast.style.opacity = '0';
       toast.style.transform = 'translateX(-50%) translateY(8px)';
     }, durationMs);
-  }
-
-  // ─────────────────────────────────────────────────────────────────
-  // QR toggle
-  // ─────────────────────────────────────────────────────────────────
-  function toggleQR() {
-    qrVisible = !qrVisible;
-    if (qrVisible) {
-      qrPanel.style.display = 'flex';
-      requestAnimationFrame(() => { qrPanel.style.opacity = '1'; });
-      qrIcon.style.color = '#333';
-    } else {
-      qrPanel.style.opacity = '0';
-      setTimeout(() => { qrPanel.style.display = 'none'; }, 300);
-      qrIcon.style.color = '#999';
-    }
   }
 
   // ─────────────────────────────────────────────────────────────────
